@@ -345,9 +345,9 @@ const INITIAL_CHAPTERS = [
 ];
 
 const themes = {
-  light: { bg:"#F7F7F8", s:"#FFFFFF", s2:"#F0F0F2", hv:"#E8E8EC", tx:"#111118", tx2:"#5C5C6D", tx3:"#9494A3", bd:"#E2E2E8", ac:"#3B82F6", acBg:"#3B82F610", sh:"0 2px 12px rgba(0,0,0,0.07)", nav:"#FFFFFFEE", rd:"#F7F7F8", boxBg:"#FAFAFA", boxBd:"#C8C8D0", boxTx:"#2D2D3A", boxHd:"#EEEEF4", boxHdTx:"#1a1a2e" },
-  dark:  { bg:"#0E0E11", s:"#1A1A20", s2:"#25252D", hv:"#32323D", tx:"#EEEEF0", tx2:"#9494A3", tx3:"#6B6B7B", bd:"#2A2A35", ac:"#3B82F6", acBg:"#3B82F618", sh:"0 2px 12px rgba(0,0,0,0.35)", nav:"#1A1A20EE", rd:"#0E0E11", boxBg:"#1E1E26", boxBd:"#3A3A48", boxTx:"#CCCCDA", boxHd:"#28283A", boxHdTx:"#E0E0F0" },
-  sepia: { bg:"#F5EDD6", s:"#FDF8EC", s2:"#EDE4CB", hv:"#E5DABC", tx:"#3C2A14", tx2:"#7C6347", tx3:"#A08B70", bd:"#DDD1B4", ac:"#B45309", acBg:"#B4530912", sh:"0 2px 12px rgba(60,42,20,0.09)", nav:"#FDF8ECEE", rd:"#F5EDD6", boxBg:"#FDF6E3", boxBd:"#D4C4A0", boxTx:"#4A3520", boxHd:"#EAD9B0", boxHdTx:"#3C2A14" },
+  light: { bg:"#F7F7F8", s:"#FFFFFF", s2:"#F0F0F2", hv:"#E8E8EC", tx:"#111118", tx2:"#5C5C6D", tx3:"#9494A3", bd:"#E2E2E8", ac:"#3B82F6", acBg:"#3B82F610", sh:"0 2px 12px rgba(0,0,0,0.07)", nav:"#FFFFFFEE", rd:"#F7F7F8", boxBg:"#FFFFFF", boxBd:"#D0D0D8", boxTx:"#111118", boxHd:"#FFFFFF", boxHdTx:"#111118" },
+  dark:  { bg:"#0E0E11", s:"#1A1A20", s2:"#25252D", hv:"#32323D", tx:"#EEEEF0", tx2:"#9494A3", tx3:"#6B6B7B", bd:"#2A2A35", ac:"#3B82F6", acBg:"#3B82F618", sh:"0 2px 12px rgba(0,0,0,0.35)", nav:"#1A1A20EE", rd:"#0E0E11", boxBg:"#FFFFFF", boxBd:"#D0D0D8", boxTx:"#111118", boxHd:"#FFFFFF", boxHdTx:"#111118" },
+  sepia: { bg:"#F5EDD6", s:"#FDF8EC", s2:"#EDE4CB", hv:"#E5DABC", tx:"#3C2A14", tx2:"#7C6347", tx3:"#A08B70", bd:"#DDD1B4", ac:"#B45309", acBg:"#B4530912", sh:"0 2px 12px rgba(60,42,20,0.09)", nav:"#FDF8ECEE", rd:"#F5EDD6", boxBg:"#FFFFFF", boxBd:"#D0D0D8", boxTx:"#111118", boxHd:"#FFFFFF", boxHdTx:"#111118" },
 };
 
 const FONTS = [
@@ -618,6 +618,7 @@ function Block({ block, c, font, fs, lh=1.75 }) {
     const ff = font.f;
     const allNotes = groups.every(g => g.kind === "note" || g.kind === "bullet");
 
+    const boxFs = fs * 0.88;
     return (
       <div style={{
         margin: "1.2em 0",
@@ -638,7 +639,7 @@ function Block({ block, c, font, fs, lh=1.75 }) {
               padding: "13px 16px 13px 20px",
               fontFamily: ff,
               fontWeight: 700,
-              fontSize: fs * 1.2,
+              fontSize: boxFs * 0.9,
               color: c.tx,
               background: c.bg,
               borderBottom: `2px solid ${c.boxBd}`,
@@ -657,14 +658,14 @@ function Block({ block, c, font, fs, lh=1.75 }) {
                 padding: "9px 16px",
                 fontFamily: ff,
                 fontWeight: 700,
-                fontSize: fs,
+                fontSize: boxFs,
                 color: c.boxHdTx,
                 background: c.boxHd,
                 borderTop: topBorder,
                 borderBottom: `1px solid ${c.boxBd}`,
               }}>
                 <span>{sentenceCase(label)}</span>
-                {val && <span style={{ color: c.tx, fontWeight: 400 }}>: {sentenceCase(val)}</span>}
+                {val && <span style={{ color: "#111118", fontWeight: 700 }}>: {sentenceCase(val)}</span>}
               </div>
             );
           }
@@ -684,7 +685,7 @@ function Block({ block, c, font, fs, lh=1.75 }) {
                 padding: "9px 16px 9px 20px",
                 fontFamily: ff,
                 fontWeight: 700,
-                fontSize: fs,
+                fontSize: boxFs,
                 color: c.tx,
                 background: c.boxHd,
                 borderTop: topBorder,
@@ -694,7 +695,7 @@ function Block({ block, c, font, fs, lh=1.75 }) {
                 alignItems: "center",
                 gap: 8,
               }}>
-                <span style={{ color: rankColor, fontSize: fs * 0.7 }}>◆</span>
+                <span style={{ color: rankColor, fontSize: boxFs * 0.7 }}>◆</span>
                 {sentenceCase(subLabel)}
               </div>
             );
@@ -709,7 +710,7 @@ function Block({ block, c, font, fs, lh=1.75 }) {
             return (
               <div key={gi} style={{
                 fontFamily: ff,
-                fontSize: fs,
+                fontSize: boxFs,
                 color: c.tx,
                 lineHeight: 1.75,
                 fontWeight: allNotes ? 600 : 500,
@@ -732,18 +733,8 @@ function Block({ block, c, font, fs, lh=1.75 }) {
             while (j < stats.length) {
               const s = stats[j];
               const isNumericVal = /^[\d,./ +~\-]+$/.test(s.val);
-              const keyWordCount = s.label.trim().split(/\s+/).length;
-              // Long layout: key has 4+ words, OR key has 3 words but val is a plain number (not %)
-              // OR val is a long/descriptive text
-              const LONG_LABELS = ['Tầm với'];
-              const isShortNum = isNumericVal && !/[\/]/.test(s.val) && s.val.replace(/[.,\s]/g,'').length <= 5;
-              const isRangeVal = /^\-?\d[\d.,~\- ]+\d%?$/.test(s.val.trim());
-              const isLargeNum = isNumericVal && !/[\/]/.test(s.val) && s.val.replace(/[.,]/g,'').length >= 4;
-              const isLong = !isShortNum && !isRangeVal && (
-                LONG_LABELS.includes(s.label.trim()) ||
-                isLargeNum ||
-                (!isNumericVal && s.val.length > 55)
-              );
+              // Chỉ long nếu val là text mô tả dài (không phải số)
+              const isLong = !isNumericVal && s.val.length > 55;
               if (isLong) {
                 rows.push({ type: "long", stat: s });
               } else {
@@ -751,33 +742,43 @@ function Block({ block, c, font, fs, lh=1.75 }) {
               }
               j++;
             }
+            // Gom các pair liền nhau thành hàng 2 cột
+            const rows2 = [];
+            let k = 0;
+            while (k < rows.length) {
+              if (rows[k].type === "pair" && k+1 < rows.length && rows[k+1].type === "pair") {
+                rows2.push({ type: "pair2", stats: [rows[k].stats[0], rows[k+1].stats[0]] });
+                k += 2;
+              } else {
+                rows2.push(rows[k]);
+                k++;
+              }
+            }
             return (
               <div key={gi} style={{ borderTop: topBorder }}>
-                {rows.map((row, ri) => {
+                {rows2.map((row, ri) => {
                   const rowTopBorder = ri > 0 ? `1px solid ${c.boxBd}` : "none";
                   if (row.type === "long") {
                     const { label, val } = row.stat;
                     const isNumeric = /^[\d,./ +~\-]+$/.test(val);
                     return (
                       <div key={ri}>
-                        {/* Label row — looks like subheader */}
                         <div style={{
                           padding: "8px 16px 4px",
                           fontFamily: ff,
                           fontWeight: 600,
-                          fontSize: fs,
+                          fontSize: boxFs,
                           color: c.tx,
                           background: "transparent",
                           borderTop: rowTopBorder,
                           letterSpacing: "0.01em",
                         }}>{sentenceCase(label)}</div>
-                        {/* Val row — looks like note/description */}
                         <div style={{
                           padding: "6px 16px 10px",
                           fontFamily: ff,
-                          fontSize: fs,
+                          fontSize: boxFs,
                           fontWeight: 500,
-                          color: isNumeric ? (statColor(label)||c.tx) : c.tx,
+                          color: c.tx,
                           lineHeight: 1.6,
                           background: c.boxBg,
                           borderBottom: `1px solid ${c.boxBd}`,
@@ -785,38 +786,38 @@ function Block({ block, c, font, fs, lh=1.75 }) {
                       </div>
                     );
                   }
-                  // Short stats → flat rows
-                  return (
-                    <div key={ri} style={{
-                      borderTop: rowTopBorder,
-                    }}>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
+                  // 2 stats cạnh nhau → 2 cột
+                  if (row.type === "pair2") {
+                    return (
+                      <div key={ri} style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderTop: rowTopBorder }}>
                         {row.stats.map((stat, si) => {
                           const isNumeric = /^[\d,./ +~\-]+$/.test(stat.val);
-                          const showBorder = !(ri === 0 && si === 0);
                           return (
                             <div key={si} style={{
                               padding: "8px 16px",
                               fontFamily: ff,
-                              borderTop: showBorder ? `1px solid ${c.boxBd}` : "none",
+                              borderLeft: si===1 ? `1px solid ${c.boxBd}` : "none",
                             }}>
-                              <span style={{
-                                fontFamily: ff,
-                                fontSize: fs,
-                                fontWeight: 600,
-                                color: c.tx,
-                              }}>{sentenceCase(stat.label)}</span>
-                              <span style={{
-                                fontFamily: ff,
-                                fontSize: fs,
-                                fontWeight: 400,
-                                color: isNumeric ? (statColor(stat.label)||c.tx) : c.tx,
-                                fontVariantNumeric: "tabular-nums",
-                              }}>: {stat.val || "—"}</span>
+                              <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:600, color:c.tx }}>{sentenceCase(stat.label)}</span>
+                              <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:"#111118", fontVariantNumeric:"tabular-nums" }}>: {stat.val||"—"}</span>
                             </div>
                           );
                         })}
                       </div>
+                    );
+                  }
+                  // 1 stat lẻ → full width
+                  return (
+                    <div key={ri} style={{ borderTop: rowTopBorder }}>
+                      {row.stats.map((stat, si) => {
+                        const isNumeric = /^[\d,./ +~\-]+$/.test(stat.val);
+                        return (
+                          <div key={si} style={{ padding:"8px 16px", fontFamily:ff }}>
+                            <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:600, color:c.tx }}>{sentenceCase(stat.label)}</span>
+                            <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:"#111118", fontVariantNumeric:"tabular-nums" }}>: {stat.val||"—"}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
