@@ -597,7 +597,7 @@ function classify(line) {
   return "note";
 }
 
-function Block({ block, c, font, fs, lh=1.75 }) {
+function Block({ block, c, font, fs, lh=1.75, mob=false }) {
   if (block.type === "box") {
     const lines = block.content.split("\n").map(l => l.trim()).filter(Boolean);
     const items = lines.map(line => ({ kind: classify(line), line }));
@@ -785,14 +785,14 @@ function Block({ block, c, font, fs, lh=1.75 }) {
                   // 2 stats cạnh nhau → 2 cột
                   if (row.type === "pair2") {
                     return (
-                      <div key={ri} style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderTop: rowTopBorder }}>
+                      <div key={ri} style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", borderTop: rowTopBorder }}>
                         {row.stats.map((stat, si) => {
                           const isNumeric = /^[\d,./ +~\-]+$/.test(stat.val);
                           return (
                             <div key={si} style={{
                               padding: "8px 16px",
                               fontFamily: ff,
-                              borderLeft: si===1 ? `1px solid ${c.boxBd}` : "none",
+                              borderLeft: (!mob && si===1) ? `1px solid ${c.boxBd}` : "none",
                             }}>
                               <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:600, color:c.tx }}>{sentenceCase(stat.label)}</span>
                               <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:"#111118", fontVariantNumeric:"tabular-nums" }}>: {stat.val||"—"}</span>
@@ -1040,6 +1040,7 @@ export default function App() {
 
 // -- HOME -- FIX 2: receives navUpload prop instead of using getElementById
 function Home({c,chapters,goRead,navUpload,bookmark,goBookmark,lastRead,scrollPos}){
+  const mob = useIsMobile();
   const [tab,setTab]=useState("about");
   const [exp,setExp]=useState(false);
   return(
@@ -1115,7 +1116,7 @@ function Home({c,chapters,goRead,navUpload,bookmark,goBookmark,lastRead,scrollPo
         ):(
           <>
             <div style={{fontSize:13,fontWeight:700,color:c.tx,marginBottom:10}}>Danh sách chương</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 48px"}}>
+            <div style={{display:"grid",gridTemplateColumns: mob ? "1fr" : "1fr 1fr",gap: mob ? "6px" : "6px 48px"}}>
               {chapters.map((ch,i)=>(
                 <button key={ch.id} onClick={()=>goRead(ch.id)}
                   style={{display:"flex",alignItems:"center",padding:"11px 14px",borderRadius:8,border:`1px solid ${c.bd}`,background:c.s,color:c.tx,fontSize:13,cursor:"pointer",fontFamily:"Arial,sans-serif",textAlign:"left",transition:"all .15s",gap:10,minWidth:0}}
@@ -1479,7 +1480,7 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
       {/* -- CONTENT -- */}
       <div style={{maxWidth:cw,margin:"36px auto 0",paddingBottom:24,paddingLeft:16,paddingRight:16}}>
         {chData.paragraphs.filter(block=>!(block.type==="text"&&isSFX(block.content))).map((block,i)=>(
-          <Block key={i} block={block} c={c} font={font} fs={fs} lh={lh}/>
+          <Block key={i} block={block} c={c} font={font} fs={fs} lh={lh} mob={mob}/>
         ))}
       </div>
 
