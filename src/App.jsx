@@ -624,14 +624,21 @@ function Block({ block, c, font, fs, lh=1.75 }) {
         margin: "1.2em 0",
         border: `1px solid ${c.boxBd}`,
         borderRadius: 10,
-        background: c.boxBg,
+        background: "#ffffff",
         overflow: "hidden",
         fontFamily: ff,
         boxShadow: `0 2px 8px rgba(0,0,0,0.07)`,
       }}>
-        {groups.map((g, gi) => {
+        {(()=>{
+          let visualIdx = 0;
+          return groups.map((g, gi) => {
           const isFirst = gi === 0;
           const topBorder = isFirst ? "none" : `1px solid ${c.boxBd}`;
+          const prevG = groups[gi - 1];
+          // Các note/bullet liền nhau thuộc cùng 1 visual block
+          const sameBlockAsPrev = (g.kind === "note" || g.kind === "bullet") && (prevG?.kind === "note" || prevG?.kind === "bullet");
+          if (!sameBlockAsPrev) visualIdx++;
+          const rowBg = "#ffffff";
 
           /* ── SECTION: [Tên vật phẩm] ── */
           if (g.kind === "section") return (
@@ -641,9 +648,9 @@ function Block({ block, c, font, fs, lh=1.75 }) {
               fontWeight: 700,
               fontSize: boxFs * 0.9,
               color: c.tx,
-              background: c.bg,
+              background: "#ffffff",
               borderBottom: `2px solid ${c.boxBd}`,
-              borderLeft: `4px solid ${c.ac}`,
+              
               letterSpacing: "0.01em",
             }}>
               {sentenceCase(g.line)}
@@ -660,7 +667,7 @@ function Block({ block, c, font, fs, lh=1.75 }) {
                 fontWeight: 700,
                 fontSize: boxFs,
                 color: c.boxHdTx,
-                background: c.boxHd,
+                background: rowBg,
                 borderTop: topBorder,
                 borderBottom: `1px solid ${c.boxBd}`,
               }}>
@@ -687,10 +694,10 @@ function Block({ block, c, font, fs, lh=1.75 }) {
                 fontWeight: 700,
                 fontSize: boxFs,
                 color: c.tx,
-                background: c.boxHd,
+                background: rowBg,
                 borderTop: topBorder,
                 borderBottom: `1px solid ${c.boxBd}`,
-                borderLeft: `3px solid ${rankColor}`,
+                
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
@@ -713,7 +720,8 @@ function Block({ block, c, font, fs, lh=1.75 }) {
                 fontSize: boxFs,
                 color: c.tx,
                 lineHeight: 1.75,
-                fontWeight: allNotes ? 600 : 500,
+                fontWeight: allNotes ? 700 : 600,
+                background: rowBg,
                 padding: seamlessPrev
                   ? (seamlessNext ? "0 16px" : "0 16px 11px")
                   : (seamlessNext ? "11px 16px 0" : "11px 16px"),
@@ -734,7 +742,7 @@ function Block({ block, c, font, fs, lh=1.75 }) {
               const s = stats[j];
               const isNumericVal = /^[\d,./ +~\-]+$/.test(s.val);
               // Chỉ long nếu val là text mô tả dài (không phải số)
-              const isLong = !isNumericVal && s.val.length > 55;
+              const isLong = !isNumericVal && s.val.length > 30;
               if (isLong) {
                 rows.push({ type: "long", stat: s });
               } else {
@@ -755,34 +763,22 @@ function Block({ block, c, font, fs, lh=1.75 }) {
               }
             }
             return (
-              <div key={gi} style={{ borderTop: topBorder }}>
+              <div key={gi} style={{ borderTop: topBorder, background: rowBg }}>
                 {rows2.map((row, ri) => {
                   const rowTopBorder = ri > 0 ? `1px solid ${c.boxBd}` : "none";
                   if (row.type === "long") {
                     const { label, val } = row.stat;
-                    const isNumeric = /^[\d,./ +~\-]+$/.test(val);
                     return (
-                      <div key={ri}>
-                        <div style={{
-                          padding: "8px 16px 4px",
-                          fontFamily: ff,
-                          fontWeight: 600,
-                          fontSize: boxFs,
-                          color: c.tx,
-                          background: "transparent",
-                          borderTop: rowTopBorder,
-                          letterSpacing: "0.01em",
-                        }}>{sentenceCase(label)}</div>
-                        <div style={{
-                          padding: "6px 16px 10px",
-                          fontFamily: ff,
-                          fontSize: boxFs,
-                          fontWeight: 500,
-                          color: c.tx,
-                          lineHeight: 1.6,
-                          background: c.boxBg,
-                          borderBottom: `1px solid ${c.boxBd}`,
-                        }}>{val}</div>
+                      <div key={ri} style={{
+                        padding: "8px 16px",
+                        fontFamily: ff,
+                        fontSize: boxFs,
+                        borderTop: rowTopBorder,
+                        background: rowBg,
+                        lineHeight: 1.6,
+                      }}>
+                        <span style={{ fontWeight: 700, color: "#111118" }}>{sentenceCase(label)}: </span>
+                        <span style={{ fontWeight: 600, color: "#111118" }}>{val}</span>
                       </div>
                     );
                   }
@@ -826,7 +822,8 @@ function Block({ block, c, font, fs, lh=1.75 }) {
           }
 
           return null;
-        })}
+        });
+        })()}
       </div>
     );
   }
