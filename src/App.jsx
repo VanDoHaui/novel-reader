@@ -61,6 +61,25 @@ async function sbDelete(id) {
     await fetch(`${SB_URL}/rest/v1/chapters?id=eq.${id}`, {method: "DELETE", headers: sbH});
   } catch(e) { console.error("sbDelete error", e); }
 }
+
+// Progress sync — đồng bộ tiến độ đọc giữa các thiết bị
+async function sbLoadProgress() {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/user_progress?id=eq.default&select=*`, {headers: sbH});
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data?.[0] || null;
+  } catch { return null; }
+}
+async function sbSaveProgress(progress) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/user_progress`, {
+      method: "POST",
+      headers: {...sbH, "Prefer": "resolution=merge-duplicates"},
+      body: JSON.stringify({id: "default", ...progress})
+    });
+  } catch(e) { console.error("sbSaveProgress error", e); }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 const INITIAL_CHAPTERS = [
@@ -830,22 +849,68 @@ function Block({ block, c, font, fs, lh=1.75 }) {
   );
 }
 
+// localStorage helpers
+const lsGet = (key, fallback) => { try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; } catch { return fallback; } };
+const lsSet = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+
 // -- MAIN --
 export default function App() {
   const [pg, setPg]          = useState("home");
   const [chapterId, setChId] = useState(null);
   const [chapters, setChaps] = useState(INITIAL_CHAPTERS);
-  const [theme, setTheme]    = useState("light");
-  const [fs, setFs]          = useState(18);
-  const [fi, setFi]          = useState(0);
-  const [lh, setLh]          = useState(1.75);
-  const [cw, setCw]          = useState(660);
-  const [bookmark, setBookmark] = useState(null);
-  const [scrollPos, setScrollPos] = useState({});
-  const [lastRead, setLastRead] = useState(null);
+  const [theme, setTheme]    = useState(()=>lsGet("theme","light"));
+  const [fs, setFs]          = useState(()=>lsGet("fs",18));
+  const [fi, setFi]          = useState(()=>lsGet("fi",0));
+  const [lh, setLh]          = useState(()=>lsGet("lh",1.75));
+  const [cw, setCw]          = useState(()=>lsGet("cw",660));
+  const [bookmark, setBookmark] = useState(()=>lsGet("bookmark",null));
+  const [scrollPos, setScrollPos] = useState(()=>lsGet("scrollPos",{}));
+  const [lastRead, setLastRead] = useState(()=>lsGet("lastRead",null));
   const [sett, setSett]      = useState(false);
   const [toc,  setToc]       = useState(false);
   const [toast, setToast]    = useState(null);
+
+  // Persist to localStorage khi thay đổi
+  useEffect(()=>lsSet("theme",theme),[theme]);
+  useEffect(()=>lsSet("fs",fs),[fs]);
+  useEffect(()=>lsSet("fi",fi),[fi]);
+  useEffect(()=>lsSet("lh",lh),[lh]);
+  useEffect(()=>lsSet("cw",cw),[cw]);
+  useEffect(()=>lsSet("bookmark",bookmark),[bookmark]);
+  useEffect(()=>lsSet("scrollPos",scrollPos),[scrollPos]);
+  useEffect(()=>lsSet("lastRead",lastRead),[lastRead]);
+
+  // Sync progress lên Supabase (debounce 2s để không spam)
+  const syncTimer = useRef(null);
+  useEffect(()=>{
+    clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(()=>{
+      sbSaveProgress({
+        last_read: lastRead,
+        bookmark,
+        scroll_pos: scrollPos,
+        settings: {theme, fs, fi, lh, cw}
+      });
+    }, 2000);
+  }, [lastRead, bookmark, scrollPos, theme, fs, fi, lh, cw]);
+
+  // Load progress từ Supabase khi mở app — ưu tiên cloud hơn localStorage
+  useEffect(()=>{
+    sbLoadProgress().then(data=>{
+      if(!data) return;
+      if(data.last_read)  { setLastRead(data.last_read);  lsSet("lastRead", data.last_read); }
+      if(data.bookmark)   { setBookmark(data.bookmark);   lsSet("bookmark", data.bookmark); }
+      if(data.scroll_pos) { setScrollPos(data.scroll_pos); lsSet("scrollPos", data.scroll_pos); }
+      if(data.settings) {
+        const s = data.settings;
+        if(s.theme) { setTheme(s.theme); lsSet("theme", s.theme); }
+        if(s.fs)    { setFs(s.fs);       lsSet("fs", s.fs); }
+        if(s.fi!=null){ setFi(s.fi);     lsSet("fi", s.fi); }
+        if(s.lh)    { setLh(s.lh);       lsSet("lh", s.lh); }
+        if(s.cw)    { setCw(s.cw);       lsSet("cw", s.cw); }
+      }
+    });
+  }, []);
 
   const c = themes[theme];
   const goRead = id => { setChId(id); setPg("read"); setSett(false); setToc(false); setLastRead(id); };
