@@ -73,11 +73,17 @@ async function sbLoadProgress() {
 }
 async function sbSaveProgress(progress) {
   try {
-    await fetch(`${SB_URL}/rest/v1/user_progress`, {
+    const r = await fetch(`${SB_URL}/rest/v1/user_progress`, {
       method: "POST",
-      headers: {...sbH, "Prefer": "resolution=merge-duplicates"},
+      headers: {
+        "apikey": SB_KEY,
+        "Authorization": `Bearer ${SB_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
       body: JSON.stringify({id: "default", ...progress})
     });
+    if(!r.ok) { const t = await r.text(); console.error("sbSaveProgress error", r.status, t); }
   } catch(e) { console.error("sbSaveProgress error", e); }
 }
 // ─────────────────────────────────────────────────────────────────────────────
