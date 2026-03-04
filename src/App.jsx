@@ -31,10 +31,20 @@ const sbH = {
 };
 async function sbLoad() {
   try {
-    // Chỉ load metadata, KHÔNG load paragraphs — tiết kiệm bandwidth với 3k chương
-    const r = await fetch(`${SB_URL}/rest/v1/chapters?select=id,title&order=id.asc&limit=5000`, {headers: sbH});
-    if (!r.ok) { console.error("sbLoad error", r.status, await r.text()); return null; }
-    return await r.json();
+    const PAGE = 1000;
+    let all = [], from = 0;
+    while(true) {
+      const r = await fetch(`${SB_URL}/rest/v1/chapters?select=id,title&order=id.asc`, {
+        headers: {...sbH, "Range": `${from}-${from+PAGE-1}`, "Range-Unit": "items"}
+      });
+      if(!r.ok) { console.error("sbLoad error", r.status, await r.text()); break; }
+      const data = await r.json();
+      if(!data || !data.length) break;
+      all = all.concat(data);
+      if(data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all.length ? all : null;
   } catch(e) { console.error("sbLoad fetch error", e); return null; }
 }
 // Load 1 chương đầy đủ khi user click đọc
