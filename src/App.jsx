@@ -22,7 +22,7 @@ const NOVEL_META = {
 
 // ── SUPABASE ─────────────────────────────────────────────────────────────────
 const SB_URL = "https://ibnkdfltckcjfmdxtkiq.supabase.co";
-const SB_KEY = "sb_publishable_lNqlanuo1lZZ2l4IGpsG7g_UdRYKeAp";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlibmtkZmx0Y2tjamZtZHh0a2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyOTE1ODcsImV4cCI6MjA4Nzg2NzU4N30.PfWLbGwYREwYLk8EC1ySh16hO9zC9PauBqDGQ1mjDWU";
 const sbH = {
   "apikey": SB_KEY,
   "Authorization": `Bearer ${SB_KEY}`,
