@@ -372,72 +372,67 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
 
     const ff = font.f;
     const allNotes = groups.every(g => g.kind === "note" || g.kind === "bullet");
+
     const boxFs = fs * 0.88;
-
-    // iOS color tokens
-    const isDark = c.bg === "#0E0E11" || c.bg === "#1a1410";
-    const iosBg     = isDark ? "rgba(28,28,30,1)"      : "rgba(255,255,255,1)";
-    const iosRow    = isDark ? "rgba(38,38,40,0)"       : "rgba(0,0,0,0)";
-    const iosSep    = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-    const iosLabel  = isDark ? "rgba(255,255,255,0.5)"  : "rgba(0,0,0,0.45)";
-    const iosValue  = isDark ? "rgba(255,255,255,0.92)" : "rgba(0,0,0,0.88)";
-    const iosNote   = isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.5)";
-    const iosAccent = c.ac;
-
     return (
       <div style={{
-        margin: "1.4em 0",
-        borderRadius: 14,
-        background: iosBg,
+        margin: "1.2em 0",
+        border: `1px solid ${c.boxBd}`,
+        borderRadius: 10,
+        background: "#ffffff",
         overflow: "hidden",
         fontFamily: ff,
-        boxShadow: isDark
-          ? "0 2px 20px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(255,255,255,0.06)"
-          : "0 2px 16px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.07)",
+        boxShadow: `0 2px 8px rgba(0,0,0,0.07)`,
       }}>
         {(()=>{
+          let visualIdx = 0;
           return groups.map((g, gi) => {
           const isFirst = gi === 0;
-          const sep = isFirst ? "none" : `0.5px solid ${iosSep}`;
+          const topBorder = isFirst ? "none" : `1px solid ${c.boxBd}`;
+          const prevG = groups[gi - 1];
+          // Các note/bullet liền nhau thuộc cùng 1 visual block
+          const sameBlockAsPrev = (g.kind === "note" || g.kind === "bullet") && (prevG?.kind === "note" || prevG?.kind === "bullet");
+          if (!sameBlockAsPrev) visualIdx++;
+          const rowBg = "#ffffff";
 
           /* ── SECTION: [Tên vật phẩm] ── */
           if (g.kind === "section") return (
             <div key={gi} style={{
-              padding: "11px 16px 10px 16px",
+              padding: "13px 16px 13px 20px",
               fontFamily: ff,
               fontWeight: 700,
-              fontSize: boxFs * 0.82,
-              color: iosLabel,
-              background: "transparent",
-              borderBottom: `0.5px solid ${iosSep}`,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
+              fontSize: boxFs * 0.9,
+              color: c.tx,
+              background: "#ffffff",
+              borderBottom: `2px solid ${c.boxBd}`,
+              
+              letterSpacing: "0.01em",
             }}>
               {sentenceCase(g.line)}
             </div>
           );
 
-          /* ── HEADER: Tên : Val ── */
+          /* ── HEADER: Tên : Grid ── */
           if (g.kind === "header") {
             const { label, val } = parseStat(g.line);
             return (
               <div key={gi} style={{
-                padding: "12px 16px",
+                padding: "9px 16px",
                 fontFamily: ff,
+                fontWeight: 700,
                 fontSize: boxFs,
-                borderTop: sep,
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                gap: 8,
+                color: c.boxHdTx,
+                background: rowBg,
+                borderTop: topBorder,
+                borderBottom: `1px solid ${c.boxBd}`,
               }}>
-                <span style={{ fontWeight: 600, color: iosLabel, flexShrink: 0 }}>{sentenceCase(label)}</span>
-                {val && <span style={{ fontWeight: 600, color: iosValue, textAlign: "right" }}>{sentenceCase(val)}</span>}
+                <span>{sentenceCase(label)}</span>
+                {val && <span style={{ color: "#111118", fontWeight: 700 }}>: {sentenceCase(val)}</span>}
               </div>
             );
           }
 
-          /* ── SUBHEADER (rank/type) ── */
+          /* ── SUBHEADER ── */
           if (g.kind === "subheader") {
             const subLabel = g.line.replace(/:$/, "").trim();
             const rankColor = /Huyền thoại/i.test(subLabel) ? "#f59e0b"
@@ -446,20 +441,23 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
               : /Cổ tích/i.test(subLabel) ? "#8b5cf6"
               : /Hiếm/i.test(subLabel) ? "#3b82f6"
               : /Thường/i.test(subLabel) ? "#6b7280"
-              : iosAccent;
+              : c.ac;
             return (
               <div key={gi} style={{
-                padding: "10px 16px",
+                padding: "9px 16px 9px 20px",
                 fontFamily: ff,
                 fontWeight: 700,
                 fontSize: boxFs,
-                color: rankColor,
-                borderTop: sep,
+                color: c.tx,
+                background: rowBg,
+                borderTop: topBorder,
+                borderBottom: `1px solid ${c.boxBd}`,
+                
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
               }}>
-                <span style={{ fontSize: boxFs * 0.65, opacity: 0.8 }}>◆</span>
+                <span style={{ color: rankColor, fontSize: boxFs * 0.7 }}>◆</span>
                 {sentenceCase(subLabel)}
               </div>
             );
@@ -474,15 +472,15 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
             return (
               <div key={gi} style={{
                 fontFamily: ff,
-                fontSize: boxFs * 0.93,
-                color: iosNote,
-                lineHeight: 1.7,
-                fontWeight: allNotes ? 600 : 400,
-                fontStyle: allNotes ? "normal" : "italic",
+                fontSize: boxFs,
+                color: c.tx,
+                lineHeight: 1.75,
+                fontWeight: allNotes ? 700 : 600,
+                background: rowBg,
                 padding: seamlessPrev
-                  ? (seamlessNext ? "0 16px" : "0 16px 10px")
-                  : (seamlessNext ? "10px 16px 0" : "10px 16px"),
-                borderTop: seamlessPrev ? "none" : sep,
+                  ? (seamlessNext ? "0 16px" : "0 16px 11px")
+                  : (seamlessNext ? "11px 16px 0" : "11px 16px"),
+                borderTop: seamlessPrev ? "none" : topBorder,
               }}>
                 {g.line}
               </div>
@@ -492,11 +490,13 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
           /* ── STATGROUP ── */
           if (g.kind === "statgroup") {
             const stats = g.lines.map(parseStat);
+            // Split into short stats (card grid) and long stats (subheader+note)
             const rows = [];
             let j = 0;
             while (j < stats.length) {
               const s = stats[j];
               const isNumericVal = /^[\d,./ +~\-]+$/.test(s.val);
+              // Chỉ long nếu val là text mô tả dài (không phải số)
               const isLong = !isNumericVal && s.val.length > 30;
               if (isLong) {
                 rows.push({ type: "long", stat: s });
@@ -505,6 +505,7 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
               }
               j++;
             }
+            // Gom các pair liền nhau thành hàng 2 cột
             const rows2 = [];
             let k = 0;
             while (k < rows.length) {
@@ -517,62 +518,57 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
               }
             }
             return (
-              <div key={gi} style={{ borderTop: sep }}>
+              <div key={gi} style={{ borderTop: topBorder, background: rowBg }}>
                 {rows2.map((row, ri) => {
-                  const rowSep = ri > 0 ? `0.5px solid ${iosSep}` : "none";
+                  const rowTopBorder = ri > 0 ? `1px solid ${c.boxBd}` : "none";
                   if (row.type === "long") {
                     const { label, val } = row.stat;
                     return (
                       <div key={ri} style={{
-                        padding: "11px 16px",
+                        padding: "8px 16px",
                         fontFamily: ff,
                         fontSize: boxFs,
-                        borderTop: rowSep,
-                        lineHeight: 1.55,
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "baseline",
-                        gap: 12,
+                        borderTop: rowTopBorder,
+                        background: rowBg,
+                        lineHeight: 1.6,
                       }}>
-                        <span style={{ fontWeight: 600, color: iosLabel, flexShrink: 0 }}>{sentenceCase(label)}</span>
-                        <span style={{ fontWeight: 500, color: iosValue, textAlign: "right" }}>{val}</span>
+                        <span style={{ fontWeight: 700, color: "#111118" }}>{sentenceCase(label)}: </span>
+                        <span style={{ fontWeight: 600, color: "#111118" }}>{val}</span>
                       </div>
                     );
                   }
+                  // 2 stats cạnh nhau → 2 cột
                   if (row.type === "pair2") {
                     return (
-                      <div key={ri} style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", borderTop: rowSep }}>
-                        {row.stats.map((stat, si) => (
-                          <div key={si} style={{
-                            padding: "11px 16px",
-                            fontFamily: ff,
-                            borderLeft: (!mob && si===1) ? `0.5px solid ${iosSep}` : "none",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 2,
-                          }}>
-                            <span style={{ fontFamily:ff, fontSize:boxFs*0.82, fontWeight:500, color:iosLabel, letterSpacing:"0.01em" }}>{sentenceCase(stat.label)}</span>
-                            <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:iosValue, fontVariantNumeric:"tabular-nums" }}>{stat.val||"—"}</span>
-                          </div>
-                        ))}
+                      <div key={ri} style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", borderTop: rowTopBorder }}>
+                        {row.stats.map((stat, si) => {
+                          const isNumeric = /^[\d,./ +~\-]+$/.test(stat.val);
+                          return (
+                            <div key={si} style={{
+                              padding: "8px 16px",
+                              fontFamily: ff,
+                              borderLeft: (!mob && si===1) ? `1px solid ${c.boxBd}` : "none",
+                            }}>
+                              <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:600, color:c.tx }}>{sentenceCase(stat.label)}</span>
+                              <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:"#111118", fontVariantNumeric:"tabular-nums" }}>: {stat.val||"—"}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   }
+                  // 1 stat lẻ → full width
                   return (
-                    <div key={ri} style={{ borderTop: rowSep }}>
-                      {row.stats.map((stat, si) => (
-                        <div key={si} style={{
-                          padding: "11px 16px",
-                          fontFamily: ff,
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "baseline",
-                          gap: 12,
-                        }}>
-                          <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:500, color:iosLabel }}>{sentenceCase(stat.label)}</span>
-                          <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:iosValue, fontVariantNumeric:"tabular-nums", textAlign:"right" }}>{stat.val||"—"}</span>
-                        </div>
-                      ))}
+                    <div key={ri} style={{ borderTop: rowTopBorder }}>
+                      {row.stats.map((stat, si) => {
+                        const isNumeric = /^[\d,./ +~\-]+$/.test(stat.val);
+                        return (
+                          <div key={si} style={{ padding:"8px 16px", fontFamily:ff }}>
+                            <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:600, color:c.tx }}>{sentenceCase(stat.label)}</span>
+                            <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:"#111118", fontVariantNumeric:"tabular-nums" }}>: {stat.val||"—"}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
