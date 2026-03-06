@@ -596,6 +596,8 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
       lineHeight: lh,
       color: c.tx,
       textAlign: "left",
+      overflowWrap: "break-word",
+      wordBreak: "break-word",
     }}>
       {content}
     </p>
@@ -730,8 +732,8 @@ export default function App() {
       @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
       @keyframes pop{from{opacity:0;transform:translateY(-8px) translateX(-50%)}to{opacity:1;transform:translateY(0) translateX(-50%)}}
       .au{animation:fadeUp .35s ease both} .d1{animation-delay:.05s}
-      ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
-      ::-webkit-scrollbar-thumb{background:${c.bd};border-radius:9px}
+      ::-webkit-scrollbar{width:12px}::-webkit-scrollbar-track{background:transparent}
+      ::-webkit-scrollbar-thumb{background:${c.tx3};border-radius:9px;border:2px solid transparent;background-clip:padding-box}
       ::selection{background:${c.ac}28}
     
   * { box-sizing: border-box; }
@@ -1139,10 +1141,7 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
                 </div>
               )}
             </div>
-            <button onClick={()=>setBookmark(bookmark===chapterId?null:chapterId)}
-              style={{width:32,height:32,borderRadius:7,border:`1px solid ${bookmark===chapterId?c.ac:c.bd}`,background:bookmark===chapterId?c.acBg:c.s,color:bookmark===chapterId?c.ac:c.tx,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",fontSize:16}}>
-              {bookmark===chapterId?"🔖":"🏷️"}
-            </button>
+
           </div>
         )}
       </div>
@@ -1166,17 +1165,6 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
                 style={{padding:"12px",borderRadius:10,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
                 <I.List/> Mục lục
               </button>
-              {/* Bookmark */}
-              <button onClick={()=>{setBookmark(bookmark===chapterId?null:chapterId);setMobMenu(false);}}
-                style={{padding:"12px",borderRadius:10,border:`1px solid ${bookmark===chapterId?c.ac:c.bd}`,background:bookmark===chapterId?c.acBg:c.bg,color:bookmark===chapterId?c.ac:c.tx,fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                <span style={{fontSize:18}}>{bookmark===chapterId?"🔖":"🏷️"}</span>
-                {bookmark===chapterId?"Bỏ bookmark":"Bookmark"}
-              </button>
-              {/* Cài đặt */}
-              <button onClick={()=>{setMobMenu(false);setSett(true);}}
-                style={{padding:"12px",borderRadius:10,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                <I.Gear/> Cài đặt
-              </button>
               {/* Đổi theme */}
               <button onClick={()=>{nextTheme();setMobMenu(false);}}
                 style={{padding:"12px",borderRadius:10,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
@@ -1194,6 +1182,33 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
                 style={{padding:"12px",borderRadius:10,border:`1px solid ${next?c.ac:c.bd}`,background:next?c.ac:"transparent",color:next?"#fff":c.tx3,fontWeight:600,fontSize:13,cursor:next?"pointer":"default"}}>
                 Chương sau →
               </button>
+            </div>
+            {/* Settings panel inline mobile */}
+            <div style={{padding:"0 16px 16px",display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{height:1,background:c.bd}}/>
+              <div>
+                <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Cỡ chữ — {fs}px</div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <button onClick={()=>setFs(Math.max(14,fs-1))} style={{width:32,height:32,borderRadius:6,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>A-</button>
+                  <div style={{flex:1,position:"relative",height:4,borderRadius:2,background:c.bd}}>
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",borderRadius:2,background:c.ac,width:`${((fs-14)/14)*100}%`,transition:"width .15s"}}/>
+                    <input type="range" min="14" max="28" value={fs} onChange={e=>setFs(+e.target.value)} style={{position:"absolute",left:0,top:-7,width:"100%",height:18,opacity:0,cursor:"pointer"}}/>
+                  </div>
+                  <button onClick={()=>setFs(Math.min(28,fs+1))} style={{width:32,height:32,borderRadius:6,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>A+</button>
+                </div>
+              </div>
+              <div>
+                <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Phông chữ</div>
+                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  {FONTS.map((f,i)=>(<button key={f.n} onClick={()=>setFi(i)} style={{padding:"5px 10px",borderRadius:5,border:fi===i?`2px solid ${c.ac}`:`1px solid ${c.bd}`,background:fi===i?c.acBg:"transparent",color:fi===i?c.ac:c.tx,fontSize:13,fontFamily:f.f,cursor:"pointer"}}>{f.n}</button>))}
+                </div>
+              </div>
+              <div>
+                <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Độ rộng</div>
+                <div style={{display:"flex",gap:4}}>
+                  {[{lb:"Hẹp",v:500},{lb:"Vừa",v:660},{lb:"Rộng",v:860},{lb:"Full",v:9999}].map(o=>(<button key={o.v} onClick={()=>setCw(o.v)} style={{flex:1,padding:"6px 0",borderRadius:5,border:cw===o.v?`2px solid ${c.ac}`:`1px solid ${c.bd}`,background:cw===o.v?c.acBg:"transparent",color:cw===o.v?c.ac:c.tx,fontSize:12,fontWeight:600,cursor:"pointer"}}>{o.lb}</button>))}
+                </div>
+              </div>
             </div>
           </div>
         </>
