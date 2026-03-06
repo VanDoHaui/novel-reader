@@ -59,7 +59,8 @@ async function sbLoadOne(id) {
 async function sbSave(ch) {
   try {
     const r = await fetch(`${SB_URL}/rest/v1/chapters`, {
-      method: "POST", headers: sbH,
+      method: "POST",
+      headers: { ...sbH, "Prefer": "resolution=merge-duplicates" },
       body: JSON.stringify({id: ch.id, title: ch.title, paragraphs: ch.paragraphs})
     });
     if (!r.ok) console.error("sbSave error", r.status, await r.text());
@@ -360,7 +361,7 @@ function classify(line) {
   return "note";
 }
 
-function Block({ block, c, font, fs, lh=1.75, mob=false }) {
+function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
   if (block.type === "box") {
     const lines = block.content.split("\n").map(l => l.trim()).filter(Boolean);
     const items = lines.map(line => ({ kind: classify(line), line }));
@@ -380,7 +381,7 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
 
     const ff = font.f;
     const allNotes = groups.every(g => g.kind === "note" || g.kind === "bullet");
-    const boxFs = fs * 0.94;
+    const boxFs = fs * 0.92;
 
     // iOS color tokens — adapt to current theme
     const isDark = c.bg === "#0E0E11";
@@ -414,18 +415,15 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
           /* ── SECTION: [Tên vật phẩm] ── */
           if (g.kind === "section") return (
             <div key={gi} style={{
-              padding: "8px 16px 8px 16px",
+              padding: "10px 16px",
               fontFamily: ff,
-              fontWeight: 600,
-              fontSize: boxFs * 0.78,
-              color: iosLabel,
-              background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.035)",
+              fontWeight: 700,
+              fontSize: boxFs * 0.97,
+              color: iosValue,
               borderTop: sep,
               borderBottom: `0.5px solid ${iosSepLine}`,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
             }}>
-              {sentenceCase(g.line)}
+              {g.line}
             </div>
           );
 
@@ -478,7 +476,7 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
             return (
               <div key={gi} style={{
                 fontFamily: ff,
-                fontSize: boxFs * 0.94,
+                fontSize: boxFs,
                 color: iosValue,
                 lineHeight: 1.65,
                 fontWeight: 400,
@@ -591,9 +589,25 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
   }
 
 
-  const content = /^<.+>$/.test(block.content.trim())
+  const rawContent = /^<.+>$/.test(block.content.trim())
     ? `"${block.content.trim().slice(1,-1).trim()}"`
     : block.content;
+
+  // Highlight tên vật phẩm/kỹ năng trong văn bản
+  const renderWithBold = (text) => {
+    if (!itemNames.length) return text;
+    // Tạo regex từ tên, sort dài trước để match đúng
+    const sorted = [...itemNames].sort((a,b)=>b.length-a.length);
+    const escaped = sorted.map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
+    const re = new RegExp(`(${escaped.join("|")})`, "gi");
+    const parts = text.split(re);
+    if (parts.length===1) return text;
+    return parts.map((part, i) =>
+      sorted.some(n=>n.toLowerCase()===part.toLowerCase())
+        ? <strong key={i} style={{fontWeight:700}}>{part}</strong>
+        : part
+    );
+  };
 
   return (
     <p style={{
@@ -606,7 +620,7 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
       overflowWrap: "break-word",
       wordBreak: "break-word",
     }}>
-      {content}
+      {renderWithBold(rawContent)}
     </p>
   );
 }
@@ -1318,9 +1332,22 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
       {/* -- SETTINGS PANEL -- */}
       {/* -- CONTENT -- */}
       <div key={chapterId} className="ch-content" style={{maxWidth:cw,margin:"36px auto 0",paddingBottom:24,paddingLeft:16,paddingRight:16}}>
-        {chData.paragraphs.filter(block=>!(block.type==="text"&&isSFX(block.content))).map((block,i)=>(
-          <Block key={i} block={block} c={c} font={font} fs={fs} lh={lh} mob={mob}/>
-        ))}
+        {(()=>{
+          // Build global item names từ tất cả chapters đã cache
+          const extractNames = (paragraphs) => paragraphs
+            .filter(b=>b.type==="box")
+            .flatMap(b=>b.content.split("\n").map(l=>l.trim()).filter(l=>/^\[.+\]$/.test(l)))
+            .map(l=>l.slice(1,-1).trim())
+            .filter(n=>n.length>2);
+          const allCached = Object.values(chapterCache.current);
+          const globalNames = [...new Set([
+            ...allCached.flatMap(ch=>ch.paragraphs ? extractNames(ch.paragraphs) : []),
+            ...extractNames(chData.paragraphs)
+          ])];
+          return chData.paragraphs.filter(block=>!(block.type==="text"&&isSFX(block.content))).map((block,i)=>(
+            <Block key={i} block={block} c={c} font={font} fs={fs} lh={lh} mob={mob} itemNames={globalNames}/>
+          ));
+        })()}
       </div>
 
       {/* -- PREV / NEXT -- */}
