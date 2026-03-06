@@ -1002,12 +1002,7 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
   // Restore scroll position when returning to a chapter
   useEffect(()=>{
     if(!chapterId) return;
-    const saved = scrollPos[chapterId];
-    if(saved && saved > 100) {
-      setTimeout(()=>window.scrollTo({top:saved}), 100);
-    } else {
-      window.scrollTo({top:0});
-    }
+    window.scrollTo({top:0});
   }, [chapterId]);
   const font   = FONTS[fi];
   const chMeta = chapters.find(ch=>ch.id===chapterId);
