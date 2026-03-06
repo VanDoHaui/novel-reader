@@ -175,11 +175,15 @@ async function parseDocx(file) {
     const paraRe = /<(p|h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi;
     let m;
     while ((m = paraRe.exec(chunk)) !== null) {
-      const txt = stripTags(m[2]).replace(/\s+/g, " ").trim();
+      const txt = stripTags(m[2]).replace(/\s+/g, " ")
+        .replace(/\[\d+\]/g, "")
+        .replace(/\s*↑\s*$/, "")
+        .trim();
       if (!txt) continue;
       if (isNavBar(txt)) continue;
       if (isSFX(txt)) continue;
       if (/^[·•.\-_=\s]+$/.test(txt)) continue;
+      if (/^https?:\/\/\S+$/.test(txt)) continue;
       blocks.push({ type: "text", content: txt });
     }
   };
@@ -225,9 +229,13 @@ async function parseTxt(file) {
 function cleanLine(line) {
   // Strip nav bars: "←Trước___Bình luận___Kế→" or "←Trước___->Kế->"
   if (isNavBar(line)) return "";
+  // Strip URLs (footnote links, google drive, etc.)
+  if (/https?:\/\/\S+/.test(line)) return "";
   return line
     .replace(/←[^\n]*[→>]/g, "")   // ← ... → or ← ... ->
     .replace(/_{4,}/g, "")
+    .replace(/\s*↑\s*$/g, "")       // ↑ ở cuối dòng (back-reference)
+    .replace(/\[\d+\]/g, "")        // [1] [2] [3] footnote numbers
     .trim();
 }
 
@@ -372,92 +380,90 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
 
     const ff = font.f;
     const allNotes = groups.every(g => g.kind === "note" || g.kind === "bullet");
+    const boxFs = fs * 0.94;
 
-    const boxFs = fs * 0.88;
+    // iOS color tokens — adapt to current theme
+    const isDark = c.bg === "#0E0E11";
+    const isSepia = c.bg === "#F5EDD6";
+    const iosBg    = c.s;
+    const iosSep   = c.bd;
+    const iosLabel = c.tx;
+    const iosValue = c.tx;
+    const iosNote  = c.tx2;
+    const iosAccent = c.ac;
+
+    // True iOS grouped table colors
+    const iosCardBg = isDark ? "rgba(44,44,46,1)" : "#ffffff";
+    const iosSepLine = isDark ? "rgba(84,84,88,0.65)" : "rgba(60,60,67,0.18)";
+
     return (
       <div style={{
-        margin: "1.2em 0",
-        border: `1px solid ${c.boxBd}`,
-        borderRadius: 10,
-        background: "#ffffff",
+        margin: "1.6em 0",
+        borderRadius: 12,
+        background: iosCardBg,
         overflow: "hidden",
         fontFamily: ff,
-        boxShadow: `0 2px 8px rgba(0,0,0,0.07)`,
+        border: `1px solid ${iosSepLine}`,
+        boxShadow: isDark ? "0 2px 12px rgba(0,0,0,0.4)" : "0 1px 4px rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.06)",
       }}>
         {(()=>{
-          let visualIdx = 0;
           return groups.map((g, gi) => {
           const isFirst = gi === 0;
-          const topBorder = isFirst ? "none" : `1px solid ${c.boxBd}`;
-          const prevG = groups[gi - 1];
-          // Các note/bullet liền nhau thuộc cùng 1 visual block
-          const sameBlockAsPrev = (g.kind === "note" || g.kind === "bullet") && (prevG?.kind === "note" || prevG?.kind === "bullet");
-          if (!sameBlockAsPrev) visualIdx++;
-          const rowBg = "#ffffff";
+          const sep = isFirst ? "none" : `0.5px solid ${iosSepLine}`;
 
           /* ── SECTION: [Tên vật phẩm] ── */
           if (g.kind === "section") return (
             <div key={gi} style={{
-              padding: "13px 16px 13px 20px",
+              padding: "8px 16px 8px 16px",
               fontFamily: ff,
-              fontWeight: 700,
-              fontSize: boxFs * 0.9,
-              color: c.tx,
-              background: "#ffffff",
-              borderBottom: `2px solid ${c.boxBd}`,
-              
-              letterSpacing: "0.01em",
+              fontWeight: 600,
+              fontSize: boxFs * 0.78,
+              color: iosLabel,
+              background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.035)",
+              borderTop: sep,
+              borderBottom: `0.5px solid ${iosSepLine}`,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
             }}>
               {sentenceCase(g.line)}
             </div>
           );
 
-          /* ── HEADER: Tên : Grid ── */
+          /* ── HEADER: Tên : Val ── */
           if (g.kind === "header") {
             const { label, val } = parseStat(g.line);
             return (
               <div key={gi} style={{
-                padding: "9px 16px",
+                padding: "11px 16px",
                 fontFamily: ff,
-                fontWeight: 700,
                 fontSize: boxFs,
-                color: c.boxHdTx,
-                background: rowBg,
-                borderTop: topBorder,
-                borderBottom: `1px solid ${c.boxBd}`,
+                borderTop: sep,
+                lineHeight: 1.5,
+                minHeight: 44,
+                display: "flex",
+                alignItems: "center",
               }}>
-                <span>{sentenceCase(label)}</span>
-                {val && <span style={{ color: "#111118", fontWeight: 700 }}>: {sentenceCase(val)}</span>}
+                <span style={{ fontWeight: 600, color: iosLabel }}>{sentenceCase(label)}</span>
+                {val && <span style={{ fontWeight: 400, color: iosValue }}>: {sentenceCase(val)}</span>}
               </div>
             );
           }
 
-          /* ── SUBHEADER ── */
+          /* ── SUBHEADER (rank/type) ── */
           if (g.kind === "subheader") {
             const subLabel = g.line.replace(/:$/, "").trim();
-            const rankColor = /Huyền thoại/i.test(subLabel) ? "#f59e0b"
-              : /Thần thoại/i.test(subLabel) ? "#ec4899"
-              : /Độc nhất/i.test(subLabel) ? "#f97316"
-              : /Cổ tích/i.test(subLabel) ? "#8b5cf6"
-              : /Hiếm/i.test(subLabel) ? "#3b82f6"
-              : /Thường/i.test(subLabel) ? "#6b7280"
-              : c.ac;
             return (
               <div key={gi} style={{
-                padding: "9px 16px 9px 20px",
+                padding: "11px 16px",
                 fontFamily: ff,
-                fontWeight: 700,
+                fontWeight: 600,
                 fontSize: boxFs,
-                color: c.tx,
-                background: rowBg,
-                borderTop: topBorder,
-                borderBottom: `1px solid ${c.boxBd}`,
-                
+                color: iosValue,
+                borderTop: sep,
+                minHeight: 44,
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
               }}>
-                <span style={{ color: rankColor, fontSize: boxFs * 0.7 }}>◆</span>
                 {sentenceCase(subLabel)}
               </div>
             );
@@ -472,15 +478,15 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
             return (
               <div key={gi} style={{
                 fontFamily: ff,
-                fontSize: boxFs,
-                color: c.tx,
-                lineHeight: 1.75,
-                fontWeight: allNotes ? 700 : 600,
-                background: rowBg,
+                fontSize: boxFs * 0.94,
+                color: iosValue,
+                lineHeight: 1.65,
+                fontWeight: 400,
+                background: "transparent",
                 padding: seamlessPrev
                   ? (seamlessNext ? "0 16px" : "0 16px 11px")
                   : (seamlessNext ? "11px 16px 0" : "11px 16px"),
-                borderTop: seamlessPrev ? "none" : topBorder,
+                borderTop: seamlessPrev ? "none" : sep,
               }}>
                 {g.line}
               </div>
@@ -490,13 +496,11 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
           /* ── STATGROUP ── */
           if (g.kind === "statgroup") {
             const stats = g.lines.map(parseStat);
-            // Split into short stats (card grid) and long stats (subheader+note)
             const rows = [];
             let j = 0;
             while (j < stats.length) {
               const s = stats[j];
               const isNumericVal = /^[\d,./ +~\-]+$/.test(s.val);
-              // Chỉ long nếu val là text mô tả dài (không phải số)
               const isLong = !isNumericVal && s.val.length > 30;
               if (isLong) {
                 rows.push({ type: "long", stat: s });
@@ -505,7 +509,6 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
               }
               j++;
             }
-            // Gom các pair liền nhau thành hàng 2 cột
             const rows2 = [];
             let k = 0;
             while (k < rows.length) {
@@ -518,57 +521,61 @@ function Block({ block, c, font, fs, lh=1.75, mob=false }) {
               }
             }
             return (
-              <div key={gi} style={{ borderTop: topBorder, background: rowBg }}>
+              <div key={gi} style={{ borderTop: sep }}>
                 {rows2.map((row, ri) => {
-                  const rowTopBorder = ri > 0 ? `1px solid ${c.boxBd}` : "none";
+                  const rowSep = ri > 0 ? `0.5px solid ${iosSepLine}` : "none";
                   if (row.type === "long") {
                     const { label, val } = row.stat;
                     return (
                       <div key={ri} style={{
-                        padding: "8px 16px",
+                        padding: "11px 16px",
                         fontFamily: ff,
                         fontSize: boxFs,
-                        borderTop: rowTopBorder,
-                        background: rowBg,
-                        lineHeight: 1.6,
+                        borderTop: rowSep,
+                        lineHeight: 1.5,
+                        minHeight: 44,
+                        display: "flex",
+                        alignItems: "center",
                       }}>
-                        <span style={{ fontWeight: 700, color: "#111118" }}>{sentenceCase(label)}: </span>
-                        <span style={{ fontWeight: 600, color: "#111118" }}>{val}</span>
+                        <span style={{ fontWeight: 600, color: iosLabel }}>{sentenceCase(label)}: </span>
+                        <span style={{ fontWeight: 400, color: iosValue }}>{val}</span>
                       </div>
                     );
                   }
-                  // 2 stats cạnh nhau → 2 cột
                   if (row.type === "pair2") {
                     return (
-                      <div key={ri} style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", borderTop: rowTopBorder }}>
-                        {row.stats.map((stat, si) => {
-                          const isNumeric = /^[\d,./ +~\-]+$/.test(stat.val);
-                          return (
-                            <div key={si} style={{
-                              padding: "8px 16px",
-                              fontFamily: ff,
-                              borderLeft: (!mob && si===1) ? `1px solid ${c.boxBd}` : "none",
-                            }}>
-                              <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:600, color:c.tx }}>{sentenceCase(stat.label)}</span>
-                              <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:"#111118", fontVariantNumeric:"tabular-nums" }}>: {stat.val||"—"}</span>
-                            </div>
-                          );
-                        })}
+                      <div key={ri} style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", borderTop: rowSep }}>
+                        {row.stats.map((stat, si) => (
+                          <div key={si} style={{
+                            padding: "9px 16px",
+                            fontFamily: ff,
+                            fontSize: boxFs,
+                            lineHeight: 1.6,
+                            borderLeft: (!mob && si===1) ? `0.5px solid ${iosSepLine}` : "none",
+                          }}>
+                            <span style={{ fontFamily:ff, fontWeight:700, color:iosLabel }}>{sentenceCase(stat.label)}</span>
+                            <span style={{ fontFamily:ff, fontWeight:400, color:iosValue }}>{stat.val ? `: ${stat.val}` : ""}</span>
+                          </div>
+                        ))}
                       </div>
                     );
                   }
-                  // 1 stat lẻ → full width
                   return (
-                    <div key={ri} style={{ borderTop: rowTopBorder }}>
-                      {row.stats.map((stat, si) => {
-                        const isNumeric = /^[\d,./ +~\-]+$/.test(stat.val);
-                        return (
-                          <div key={si} style={{ padding:"8px 16px", fontFamily:ff }}>
-                            <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:600, color:c.tx }}>{sentenceCase(stat.label)}</span>
-                            <span style={{ fontFamily:ff, fontSize:boxFs, fontWeight:700, color:"#111118", fontVariantNumeric:"tabular-nums" }}>: {stat.val||"—"}</span>
-                          </div>
-                        );
-                      })}
+                    <div key={ri} style={{ borderTop: rowSep }}>
+                      {row.stats.map((stat, si) => (
+                        <div key={si} style={{
+                          padding: "11px 16px",
+                          fontFamily: ff,
+                          fontSize: boxFs,
+                          lineHeight: 1.5,
+                          minHeight: 44,
+                          display: "flex",
+                          alignItems: "center",
+                        }}>
+                          <span style={{ fontFamily:ff, fontWeight:600, color:iosLabel }}>{sentenceCase(stat.label)}</span>
+                          <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, fontVariantNumeric:"tabular-nums" }}>{stat.val ? `: ${stat.val}` : ""}</span>
+                        </div>
+                      ))}
                     </div>
                   );
                 })}
@@ -737,6 +744,8 @@ export default function App() {
       @keyframes overlayIn{from{opacity:0}to{opacity:1}}
       .au{animation:fadeUp .35s ease both} .d1{animation-delay:.05s}
       .ch-content{animation:chFadeIn .3s cubic-bezier(.22,1,.36,1) both}
+      .ios-row{transition:background .12s ease}
+      .ios-row:active{background:rgba(0,0,0,0.04)!important}
       ::-webkit-scrollbar{width:12px}::-webkit-scrollbar-track{background:transparent}
       ::-webkit-scrollbar-thumb{background:${c.tx3};border-radius:9px;border:2px solid transparent;background-clip:padding-box}
       ::selection{background:${c.ac}28}
