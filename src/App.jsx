@@ -731,7 +731,12 @@ export default function App() {
       input:focus{outline:none}
       @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
       @keyframes pop{from{opacity:0;transform:translateY(-8px) translateX(-50%)}to{opacity:1;transform:translateY(0) translateX(-50%)}}
+      @keyframes chFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+      @keyframes settFade{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+      @keyframes overlayIn{from{opacity:0}to{opacity:1}}
       .au{animation:fadeUp .35s ease both} .d1{animation-delay:.05s}
+      .ch-content{animation:chFadeIn .3s cubic-bezier(.22,1,.36,1) both}
       ::-webkit-scrollbar{width:12px}::-webkit-scrollbar-track{background:transparent}
       ::-webkit-scrollbar-thumb{background:${c.tx3};border-radius:9px;border:2px solid transparent;background-clip:padding-box}
       ::selection{background:${c.ac}28}
@@ -976,37 +981,61 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
     if(!chapterId) return;
     const saved = scrollPos[chapterId];
     if(saved && saved > 100) {
-      setTimeout(()=>window.scrollTo({top:saved, behavior:'smooth'}), 100);
+      setTimeout(()=>window.scrollTo({top:saved}), 100);
     } else {
-      window.scrollTo({top:0, behavior:'smooth'});
+      window.scrollTo({top:0});
     }
   }, [chapterId]);
   const font   = FONTS[fi];
   const chMeta = chapters.find(ch=>ch.id===chapterId);
   const [chData, setChDataLocal] = useState(null);
 
+  // Cache chương đã load — tránh fetch lại
+  const chapterCache = useRef({});
+
   // Lazy load paragraphs khi chapterId thay đổi
   useEffect(()=>{
     if(!chapterId) return;
     setChDataLocal(null);
+    // Kiểm tra cache trước
+    if(chapterCache.current[chapterId]){
+      setChDataLocal(chapterCache.current[chapterId]);
+      return;
+    }
     // Nếu đã có paragraphs trong memory (vừa upload) thì dùng luôn
     const cached = chapters.find(ch=>ch.id===chapterId);
     if(cached?.paragraphs?.length){
+      chapterCache.current[chapterId] = cached;
       setChDataLocal(cached);
       return;
     }
     // Không có thì fetch từ Supabase
     sbLoadOne(chapterId).then(data=>{
-      if(data) setChDataLocal(data);
+      if(data){
+        chapterCache.current[chapterId] = data;
+        setChDataLocal(data);
+      }
     });
   },[chapterId]);
+
+  // Prefetch chương kế tiếp và trước
+  useEffect(()=>{
+    const prefetch = (id) => {
+      if(!id || chapterCache.current[id]) return;
+      const mem = chapters.find(ch=>ch.id===id);
+      if(mem?.paragraphs?.length){ chapterCache.current[id]=mem; return; }
+      sbLoadOne(id).then(data=>{ if(data) chapterCache.current[id]=data; });
+    };
+    if(next) prefetch(next.id);
+    if(prev) prefetch(prev.id);
+  },[chapterId, next, prev]);
 
   // Keyboard ← → navigation
   useEffect(()=>{
     const handler = (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-      if (e.key === "ArrowRight" && next) { setChId(next.id); window.scrollTo({top:0,behavior:"smooth"}); }
-      if (e.key === "ArrowLeft"  && prev) { setChId(prev.id); window.scrollTo({top:0,behavior:"smooth"}); }
+      if (e.key === "ArrowRight" && next) { setChId(next.id); window.scrollTo({top:0}); }
+      if (e.key === "ArrowLeft"  && prev) { setChId(prev.id); window.scrollTo({top:0}); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -1085,7 +1114,7 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
                     itemHeight={34}
                     containerStyle={{flex:1,minHeight:0,maxHeight:300}}
                     renderItem={ch=>(
-                      <button onClick={()=>{setChId(ch.id);setToc(false);setTocSearch('');setTocSearchDebounced('');window.scrollTo({top:0,behavior:"smooth"});}}
+                      <button onClick={()=>{setChId(ch.id);setToc(false);setTocSearch('');setTocSearchDebounced('');window.scrollTo({top:0});}}
                         style={{width:"100%",height:34,padding:"0 10px",borderRadius:6,textAlign:"left",border:"none",background:chapterId===ch.id?c.acBg:"transparent",color:chapterId===ch.id?c.ac:c.tx,fontSize:12.5,fontWeight:chapterId===ch.id?600:400,fontFamily:"Arial,sans-serif",cursor:"pointer",lineHeight:1.4,display:"flex",alignItems:"center",boxSizing:"border-box",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}
                         onMouseEnter={e=>{if(chapterId!==ch.id)e.currentTarget.style.background=c.hv;}}
                         onMouseLeave={e=>{if(chapterId!==ch.id)e.currentTarget.style.background="transparent";}}>
@@ -1102,40 +1131,56 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
                 <I.Gear/> Cài đặt
               </button>
               {sett&&(
-                <div className="au" onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:50,background:c.s,borderRadius:10,padding:"14px 16px",border:`1px solid ${c.bd}`,boxShadow:c.sh,width:280,display:"flex",flexDirection:"column",gap:12}}>
-                  <div>
-                    <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Giao diện</div>
-                    <div style={{display:"flex",gap:4}}>
-                      {[{id:"light",lb:"Sáng",bg:"#F7F7F8",fg:"#111"},{id:"dark",lb:"Tối",bg:"#0E0E11",fg:"#EEE"},{id:"sepia",lb:"Sepia",bg:"#F5EDD6",fg:"#3C2A14"}].map(m=>(
-                        <button key={m.id} onClick={()=>setTheme(m.id)} style={{flex:1,padding:"5px 0",borderRadius:6,border:theme===m.id?`2px solid ${c.ac}`:`1px solid ${c.bd}`,background:m.bg,color:m.fg,fontSize:11,fontWeight:600,cursor:"pointer"}}>{m.lb}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Cỡ chữ — {fs}px</div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <button onClick={()=>setFs(Math.max(14,fs-1))} style={{width:26,height:26,borderRadius:5,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>A-</button>
-                      <div style={{flex:1,position:"relative",height:3,borderRadius:2,background:c.bd}}>
-                        <div style={{position:"absolute",left:0,top:0,height:"100%",borderRadius:2,background:c.ac,width:`${((fs-14)/14)*100}%`,transition:"width .15s"}}/>
-                        <input type="range" min="14" max="28" value={fs} onChange={e=>setFs(+e.target.value)} style={{position:"absolute",left:0,top:-7,width:"100%",height:18,opacity:0,cursor:"pointer"}}/>
+                <div className="au" onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"calc(100% + 10px)",right:0,zIndex:50,width:300,animation:"settFade .2s cubic-bezier(.34,1.56,.64,1) both"}}>
+                  {/* iOS-style grouped settings */}
+                  <div style={{background:theme==="dark"?"rgba(28,28,30,0.95)":"rgba(255,255,255,0.95)",backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",borderRadius:16,overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.18),0 0 0 0.5px rgba(0,0,0,0.08)"}}>
+                    {/* Giao diện */}
+                    <div style={{padding:"14px 16px 10px"}}>
+                      <div style={{fontSize:11,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Giao diện</div>
+                      <div style={{display:"flex",gap:6,background:theme==="dark"?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.06)",borderRadius:10,padding:3}}>
+                        {[{id:"light",lb:"☀️ Sáng"},{id:"dark",lb:"🌙 Tối"},{id:"sepia",lb:"📜 Sepia"}].map(m=>(
+                          <button key={m.id} onClick={()=>setTheme(m.id)} style={{flex:1,padding:"6px 0",borderRadius:8,border:"none",background:theme===m.id?(theme==="dark"?"rgba(255,255,255,0.15)":"#fff"):"transparent",color:theme===m.id?c.tx:c.tx2,fontSize:11.5,fontWeight:theme===m.id?700:500,cursor:"pointer",transition:"all .18s",boxShadow:theme===m.id?"0 1px 4px rgba(0,0,0,0.12)":"none"}}>{m.lb}</button>
+                        ))}
                       </div>
-                      <button onClick={()=>setFs(Math.min(28,fs+1))} style={{width:26,height:26,borderRadius:5,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>A+</button>
                     </div>
-                  </div>
-                  <div>
-                    <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Phông chữ</div>
-                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                      {FONTS.map((f,i)=>(
-                        <button key={f.n} onClick={()=>setFi(i)} style={{padding:"3px 9px",borderRadius:5,border:fi===i?`2px solid ${c.ac}`:`1px solid ${c.bd}`,background:fi===i?c.acBg:"transparent",color:fi===i?c.ac:c.tx,fontSize:11,fontFamily:f.f,cursor:"pointer"}}>{f.n}</button>
-                      ))}
+                    <div style={{height:"0.5px",background:theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",margin:"0 16px"}}/>
+                    {/* Cỡ chữ */}
+                    <div style={{padding:"12px 16px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                        <div style={{fontSize:11,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.06em"}}>Cỡ chữ</div>
+                        <div style={{fontSize:13,fontWeight:700,color:c.ac,background:c.acBg,padding:"2px 10px",borderRadius:20}}>{fs}px</div>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <button onClick={()=>setFs(Math.max(14,fs-1))} style={{width:32,height:32,borderRadius:50,border:"none",background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)",color:c.tx,fontSize:16,fontWeight:300,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>−</button>
+                        <div style={{flex:1,position:"relative",height:4,borderRadius:4,background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)"}}>
+                          <div style={{position:"absolute",left:0,top:0,height:"100%",borderRadius:4,background:c.ac,width:`${((fs-14)/14)*100}%`,transition:"width .15s"}}/>
+                          <input type="range" min="14" max="28" value={fs} onChange={e=>setFs(+e.target.value)} style={{position:"absolute",left:0,top:-8,width:"100%",height:20,opacity:0,cursor:"pointer"}}/>
+                        </div>
+                        <button onClick={()=>setFs(Math.min(28,fs+1))} style={{width:32,height:32,borderRadius:50,border:"none",background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)",color:c.tx,fontSize:16,fontWeight:300,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>+</button>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Độ rộng</div>
-                    <div style={{display:"flex",gap:4}}>
-                      {[{lb:"Hẹp",v:500},{lb:"Vừa",v:660},{lb:"Rộng",v:860},{lb:"Full",v:9999}].map(o=>(
-                        <button key={o.v} onClick={()=>setCw(o.v)} style={{flex:1,padding:"4px 0",borderRadius:5,border:cw===o.v?`2px solid ${c.ac}`:`1px solid ${c.bd}`,background:cw===o.v?c.acBg:"transparent",color:cw===o.v?c.ac:c.tx,fontSize:11,fontWeight:600,cursor:"pointer"}}>{o.lb}</button>
-                      ))}
+                    <div style={{height:"0.5px",background:theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",margin:"0 16px"}}/>
+                    {/* Phông chữ */}
+                    <div style={{padding:"12px 16px"}}>
+                      <div style={{fontSize:11,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Phông chữ</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                        {FONTS.map((f,i)=>(
+                          <button key={f.n} onClick={()=>setFi(i)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",borderRadius:10,border:"none",background:fi===i?(theme==="dark"?"rgba(59,130,246,0.15)":"rgba(59,130,246,0.08)"):"transparent",color:fi===i?c.ac:c.tx,fontSize:13,fontFamily:f.f,cursor:"pointer",transition:"all .15s",textAlign:"left"}}>
+                            <span style={{fontWeight:fi===i?700:400}}>{f.n}</span>
+                            {fi===i&&<span style={{fontSize:16}}>✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{height:"0.5px",background:theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",margin:"0 16px"}}/>
+                    {/* Độ rộng */}
+                    <div style={{padding:"12px 16px 14px"}}>
+                      <div style={{fontSize:11,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Độ rộng</div>
+                      <div style={{display:"flex",gap:6,background:theme==="dark"?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.06)",borderRadius:10,padding:3}}>
+                        {[{lb:"Hẹp",v:500},{lb:"Vừa",v:660},{lb:"Rộng",v:860},{lb:"Full",v:9999}].map(o=>(
+                          <button key={o.v} onClick={()=>setCw(o.v)} style={{flex:1,padding:"6px 0",borderRadius:8,border:"none",background:cw===o.v?(theme==="dark"?"rgba(255,255,255,0.15)":"#fff"):"transparent",color:cw===o.v?c.tx:c.tx2,fontSize:11.5,fontWeight:cw===o.v?700:500,cursor:"pointer",transition:"all .18s",boxShadow:cw===o.v?"0 1px 4px rgba(0,0,0,0.12)":"none"}}>{o.lb}</button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1149,8 +1194,8 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
       {/* ── MOBILE BOTTOM SHEET ── */}
       {mob && mobMenu && (
         <>
-          <div onClick={()=>setMobMenu(false)} style={{position:"fixed",inset:0,zIndex:90,background:"rgba(0,0,0,0.45)"}}/>
-          <div className="au" style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:c.s,borderRadius:"18px 18px 0 0",padding:"0 0 env(safe-area-inset-bottom,16px)",boxShadow:"0 -4px 30px rgba(0,0,0,0.2)"}}>
+          <div onClick={()=>setMobMenu(false)} style={{position:"fixed",inset:0,zIndex:90,background:"rgba(0,0,0,0.5)",animation:"overlayIn .2s ease"}}/>
+          <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:theme==="dark"?"rgba(28,28,30,0.97)":"rgba(255,255,255,0.97)",backdropFilter:"blur(40px)",WebkitBackdropFilter:"blur(40px)",borderRadius:"20px 20px 0 0",padding:"0 0 env(safe-area-inset-bottom,20px)",boxShadow:"0 -2px 40px rgba(0,0,0,0.2)",animation:"sheetUp .32s cubic-bezier(.32,1,.23,1) both"}}>
             {/* Handle bar */}
             <div style={{display:"flex",justifyContent:"center",padding:"10px 0 6px"}}>
               <div style={{width:36,height:4,borderRadius:2,background:c.bd}}/>
@@ -1159,54 +1204,68 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
             <div style={{padding:"6px 20px 14px",borderBottom:`1px solid ${c.bd}`,fontWeight:700,fontSize:15,color:c.tx}}>{chMeta.title}</div>
 
             {/* Actions */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,padding:"14px 16px"}}>
-              {/* Mục lục */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,padding:"12px 16px"}}>
               <button onClick={()=>{setMobMenu(false);setToc(true);}}
-                style={{padding:"12px",borderRadius:10,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                <I.List/> Mục lục
+                style={{padding:"14px 12px",borderRadius:14,border:"none",background:theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.05)",color:c.tx,fontWeight:600,fontSize:14,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transition:"all .15s"}}>
+                <I.List size={20}/> Mục lục
               </button>
-              {/* Đổi theme */}
               <button onClick={()=>{nextTheme();setMobMenu(false);}}
-                style={{padding:"12px",borderRadius:10,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                <span style={{fontSize:18}}>{theme==="dark"?"☀️":"🌙"}</span>
+                style={{padding:"14px 12px",borderRadius:14,border:"none",background:theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.05)",color:c.tx,fontWeight:600,fontSize:14,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transition:"all .15s"}}>
+                <span style={{fontSize:20}}>{theme==="dark"?"☀️":"🌙"}</span>
                 Giao diện
               </button>
             </div>
             {/* Prev / Next */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,padding:"0 16px 16px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,padding:"0 16px 14px"}}>
               <button onClick={()=>{if(prev){setChId(prev.id);window.scrollTo({top:0});setMobMenu(false);}}} disabled={!prev}
-                style={{padding:"12px",borderRadius:10,border:`1px solid ${prev?c.ac:c.bd}`,background:prev?c.ac:"transparent",color:prev?"#fff":c.tx3,fontWeight:600,fontSize:13,cursor:prev?"pointer":"default"}}>
-                ← Chương trước
+                style={{padding:"14px 12px",borderRadius:14,border:"none",background:prev?c.ac:"rgba(0,0,0,0.04)",color:prev?"#fff":c.tx3,fontWeight:700,fontSize:14,cursor:prev?"pointer":"default",opacity:prev?1:0.4,transition:"all .18s"}}>
+                ← Trước
               </button>
               <button onClick={()=>{if(next){setChId(next.id);window.scrollTo({top:0});setMobMenu(false);}}} disabled={!next}
-                style={{padding:"12px",borderRadius:10,border:`1px solid ${next?c.ac:c.bd}`,background:next?c.ac:"transparent",color:next?"#fff":c.tx3,fontWeight:600,fontSize:13,cursor:next?"pointer":"default"}}>
-                Chương sau →
+                style={{padding:"14px 12px",borderRadius:14,border:"none",background:next?c.ac:"rgba(0,0,0,0.04)",color:next?"#fff":c.tx3,fontWeight:700,fontSize:14,cursor:next?"pointer":"default",opacity:next?1:0.4,transition:"all .18s"}}>
+                Sau →
               </button>
             </div>
-            {/* Settings panel inline mobile */}
-            <div style={{padding:"0 16px 16px",display:"flex",flexDirection:"column",gap:12}}>
-              <div style={{height:1,background:c.bd}}/>
-              <div>
-                <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Cỡ chữ — {fs}px</div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <button onClick={()=>setFs(Math.max(14,fs-1))} style={{width:32,height:32,borderRadius:6,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>A-</button>
-                  <div style={{flex:1,position:"relative",height:4,borderRadius:2,background:c.bd}}>
-                    <div style={{position:"absolute",left:0,top:0,height:"100%",borderRadius:2,background:c.ac,width:`${((fs-14)/14)*100}%`,transition:"width .15s"}}/>
-                    <input type="range" min="14" max="28" value={fs} onChange={e=>setFs(+e.target.value)} style={{position:"absolute",left:0,top:-7,width:"100%",height:18,opacity:0,cursor:"pointer"}}/>
+            {/* Settings panel inline mobile - iOS style */}
+            <div style={{padding:"0 12px 8px"}}>
+              <div style={{height:"0.5px",background:theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",marginBottom:16}}/>
+
+              {/* Cỡ chữ */}
+              <div style={{marginBottom:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div style={{fontSize:12,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.05em"}}>Cỡ chữ</div>
+                  <div style={{fontSize:13,fontWeight:700,color:c.ac,background:c.acBg,padding:"2px 10px",borderRadius:20}}>{fs}px</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <button onClick={()=>setFs(Math.max(14,fs-1))} style={{width:36,height:36,borderRadius:50,border:"none",background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)",color:c.tx,fontSize:20,fontWeight:300,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                  <div style={{flex:1,position:"relative",height:4,borderRadius:4,background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)"}}>
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",borderRadius:4,background:c.ac,width:`${((fs-14)/14)*100}%`,transition:"width .15s"}}/>
+                    <input type="range" min="14" max="28" value={fs} onChange={e=>setFs(+e.target.value)} style={{position:"absolute",left:0,top:-10,width:"100%",height:24,opacity:0,cursor:"pointer"}}/>
                   </div>
-                  <button onClick={()=>setFs(Math.min(28,fs+1))} style={{width:32,height:32,borderRadius:6,border:`1px solid ${c.bd}`,background:c.bg,color:c.tx,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>A+</button>
+                  <button onClick={()=>setFs(Math.min(28,fs+1))} style={{width:36,height:36,borderRadius:50,border:"none",background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)",color:c.tx,fontSize:20,fontWeight:300,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
               </div>
-              <div>
-                <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Phông chữ</div>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                  {FONTS.map((f,i)=>(<button key={f.n} onClick={()=>setFi(i)} style={{padding:"5px 10px",borderRadius:5,border:fi===i?`2px solid ${c.ac}`:`1px solid ${c.bd}`,background:fi===i?c.acBg:"transparent",color:fi===i?c.ac:c.tx,fontSize:13,fontFamily:f.f,cursor:"pointer"}}>{f.n}</button>))}
+
+              {/* Phông chữ */}
+              <div style={{marginBottom:16}}>
+                <div style={{fontSize:12,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Phông chữ</div>
+                <div style={{background:theme==="dark"?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.04)",borderRadius:12,overflow:"hidden"}}>
+                  {FONTS.map((f,i)=>(
+                    <button key={f.n} onClick={()=>setFi(i)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"13px 16px",border:"none",borderBottom:i<FONTS.length-1?`0.5px solid ${theme==="dark"?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)"}`:"none",background:"transparent",color:fi===i?c.ac:c.tx,fontSize:15,fontFamily:f.f,cursor:"pointer",textAlign:"left"}}>
+                      <span style={{fontWeight:fi===i?600:400}}>{f.n}</span>
+                      {fi===i&&<span style={{color:c.ac,fontSize:18,lineHeight:1}}>✓</span>}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div>
-                <div style={{fontSize:11,fontWeight:600,color:c.tx,marginBottom:6}}>Độ rộng</div>
-                <div style={{display:"flex",gap:4}}>
-                  {[{lb:"Hẹp",v:500},{lb:"Vừa",v:660},{lb:"Rộng",v:860},{lb:"Full",v:9999}].map(o=>(<button key={o.v} onClick={()=>setCw(o.v)} style={{flex:1,padding:"6px 0",borderRadius:5,border:cw===o.v?`2px solid ${c.ac}`:`1px solid ${c.bd}`,background:cw===o.v?c.acBg:"transparent",color:cw===o.v?c.ac:c.tx,fontSize:12,fontWeight:600,cursor:"pointer"}}>{o.lb}</button>))}
+
+              {/* Độ rộng */}
+              <div style={{marginBottom:8}}>
+                <div style={{fontSize:12,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Độ rộng</div>
+                <div style={{display:"flex",gap:6,background:theme==="dark"?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.05)",borderRadius:12,padding:4}}>
+                  {[{lb:"Hẹp",v:500},{lb:"Vừa",v:660},{lb:"Rộng",v:860},{lb:"Full",v:9999}].map(o=>(
+                    <button key={o.v} onClick={()=>setCw(o.v)} style={{flex:1,padding:"8px 0",borderRadius:9,border:"none",background:cw===o.v?(theme==="dark"?"rgba(255,255,255,0.15)":"#fff"):"transparent",color:cw===o.v?c.tx:c.tx2,fontSize:13,fontWeight:cw===o.v?700:500,cursor:"pointer",transition:"all .18s",boxShadow:cw===o.v?"0 1px 4px rgba(0,0,0,0.12)":"none"}}>{o.lb}</button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1236,7 +1295,7 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
                 itemHeight={44}
                 containerStyle={{flex:1}}
                 renderItem={ch=>(
-                  <button onClick={()=>{setChId(ch.id);setToc(false);setTocSearch('');setTocSearchDebounced('');window.scrollTo({top:0,behavior:"smooth"});}}
+                  <button onClick={()=>{setChId(ch.id);setToc(false);setTocSearch('');setTocSearchDebounced('');window.scrollTo({top:0});}}
                     style={{width:"100%",height:44,padding:"0 12px",borderRadius:8,textAlign:"left",border:"none",background:chapterId===ch.id?c.acBg:"transparent",color:chapterId===ch.id?c.ac:c.tx,fontSize:14,fontWeight:chapterId===ch.id?600:400,cursor:"pointer",display:"flex",alignItems:"center",boxSizing:"border-box",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
                     {bookmark===ch.id && <span style={{color:c.ac,marginRight:6}}>🔖</span>}{ch.title}
                   </button>
@@ -1249,7 +1308,7 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
 
       {/* -- SETTINGS PANEL -- */}
       {/* -- CONTENT -- */}
-      <div style={{maxWidth:cw,margin:"36px auto 0",paddingBottom:24,paddingLeft:16,paddingRight:16}}>
+      <div key={chapterId} className="ch-content" style={{maxWidth:cw,margin:"36px auto 0",paddingBottom:24,paddingLeft:16,paddingRight:16}}>
         {chData.paragraphs.filter(block=>!(block.type==="text"&&isSFX(block.content))).map((block,i)=>(
           <Block key={i} block={block} c={c} font={font} fs={fs} lh={lh} mob={mob}/>
         ))}
