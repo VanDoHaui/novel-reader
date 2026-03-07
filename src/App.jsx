@@ -172,6 +172,7 @@ async function parseDocx(file) {
   const html = htmlResult.value;
   const blocks = [];
 
+  let navbarFound = false;
   const processTextHtml = (chunk) => {
     const paraRe = /<(p|h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi;
     let m;
@@ -181,7 +182,8 @@ async function parseDocx(file) {
         .replace(/\s*↑\s*$/, "")
         .trim();
       if (!txt) continue;
-      if (isNavBar(txt)) continue;
+      if (isNavBar(txt)) { navbarFound = true; continue; }
+      if (navbarFound) continue; // bỏ tất cả sau navbar
       if (isSFX(txt)) continue;
       if (/^[·•.\-_=\s]+$/.test(txt)) continue;
       if (/^https?:\/\/\S+$/.test(txt)) continue;
@@ -244,8 +246,14 @@ function textToBlocks(raw) {
   const lines = raw.split(/\n/).map(cleanLine);
   const blocks = [];
   let i = 0;
+  // Tìm navbar cuối cùng, bỏ tất cả nội dung sau đó
+  let lastNavIdx = -1;
+  for(let k=0; k<lines.length; k++){
+    if(isNavBar(raw.split(/\n/)[k])) lastNavIdx = k;
+  }
+  const cutoff = lastNavIdx > 0 ? lastNavIdx : lines.length;
 
-  while (i < lines.length) {
+  while (i < Math.min(lines.length, cutoff)) {
     const line = lines[i];
     if (!line || /^[\s·•.\-*_]+$/.test(line) || isSFX(line)) { i++; continue; }
 
@@ -625,6 +633,9 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
   );
 }
 
+// Global chapter cache — dùng ngoài component để addChapters có thể clear
+const globalChapterCache = { current: {} };
+
 // localStorage helpers
 const lsGet = (key, fallback) => { try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; } catch { return fallback; } };
 const lsSet = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
@@ -696,11 +707,16 @@ export default function App() {
   const nextTheme = () => setTheme(t => t==="light"?"dark":t==="dark"?"sepia":"light");
 
   const addChapters = newChaps => {
+    // Clear cache + delete existing then save
+    newChaps.forEach(async ch => {
+      delete globalChapterCache.current[ch.id]; // xóa cache cũ
+      await sbDelete(ch.id);
+      await sbSave(ch);
+    });
     setChaps(prev => {
-      const ids = new Set(prev.map(c=>c.id));
-      const toAdd = newChaps.filter(c=>!ids.has(c.id));
-      toAdd.forEach(ch => sbSave(ch));
-      return [...prev, ...toAdd].sort((a,b)=>a.id-b.id);
+      const newIds = new Set(newChaps.map(c=>c.id));
+      const kept = prev.filter(c=>!newIds.has(c.id));
+      return [...kept, ...newChaps].sort((a,b)=>a.id-b.id);
     });
   };
   const deleteChapter = id => { sbDelete(id); setChaps(prev=>prev.filter(c=>c.id!==id)); };
@@ -1009,7 +1025,7 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
   const [chData, setChDataLocal] = useState(null);
 
   // Cache chương đã load — tránh fetch lại
-  const chapterCache = useRef({});
+  const chapterCache = globalChapterCache;
 
   // Lazy load paragraphs khi chapterId thay đổi
   useEffect(()=>{
