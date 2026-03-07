@@ -184,6 +184,7 @@ async function parseDocx(file) {
       if (!txt) continue;
       if (isNavBar(txt)) { navbarFound = true; continue; }
       if (navbarFound) continue; // bỏ tất cả sau navbar
+      if (/↑/.test(txt)) continue; // chú thích dịch giả
       if (isSFX(txt)) continue;
       if (/^[·•.\-_=\s]+$/.test(txt)) continue;
       if (/^https?:\/\/\S+$/.test(txt)) continue;
@@ -234,6 +235,8 @@ function cleanLine(line) {
   if (isNavBar(line)) return "";
   // Strip URLs (footnote links, google drive, etc.)
   if (/https?:\/\/\S+/.test(line)) return "";
+  // Xóa cả dòng nếu có ↑ (chú thích dịch giả)
+  if (/↑/.test(line)) return "";
   return line
     .replace(/←[^\n]*[→>]/g, "")   // ← ... → or ← ... ->
     .replace(/_{4,}/g, "")
