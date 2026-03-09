@@ -561,8 +561,10 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                             fontSize: boxFs,
                             lineHeight: 1.6,
                             borderLeft: (!mob && si===1) ? `0.5px solid ${iosSepLine}` : "none",
+                            display: "flex",
+                            alignItems: "flex-start",
                           }}>
-                            <span style={{ fontFamily:ff, fontWeight:700, color:iosLabel }}>{sentenceCase(stat.label)}</span>
+                            <span style={{ fontFamily:ff, fontWeight:700, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}</span>
                             <span style={{ fontFamily:ff, fontWeight:400, color:iosValue }}>{stat.val ? `: ${stat.val}` : ""}</span>
                           </div>
                         ))}
@@ -579,9 +581,10 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                           lineHeight: 1.5,
                           minHeight: 44,
                           display: "flex",
-                          alignItems: "center",
+                          alignItems: "flex-start",
+                          gap: 0,
                         }}>
-                          <span style={{ fontFamily:ff, fontWeight:600, color:iosLabel }}>{sentenceCase(stat.label)}</span>
+                          <span style={{ fontFamily:ff, fontWeight:600, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}</span>
                           <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, fontVariantNumeric:"tabular-nums" }}>{stat.val ? `: ${stat.val}` : ""}</span>
                         </div>
                       ))}
