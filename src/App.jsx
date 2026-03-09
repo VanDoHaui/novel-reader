@@ -374,7 +374,21 @@ function classify(line) {
 
 function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
   if (block.type === "box") {
-    const lines = block.content.split("\n").map(l => l.trim()).filter(Boolean);
+    // Merge lines bị ngắt giữa label và colon (vd: "Kỹ" + "Năng: value" → "Kỹ Năng: value")
+    const rawLines = block.content.split("\n").map(l => l.trim()).filter(Boolean);
+    const mergedLines = [];
+    for (let mi = 0; mi < rawLines.length; mi++) {
+      const cur = rawLines[mi];
+      const next = rawLines[mi + 1];
+      // Nếu dòng hiện tại không có dấu : và ngắn (fragment), và dòng sau có dấu : → merge
+      if (next && !cur.includes(":") && cur.length <= 20 && next.includes(":")) {
+        mergedLines.push(cur + " " + next);
+        mi++; // bỏ qua dòng tiếp
+      } else {
+        mergedLines.push(cur);
+      }
+    }
+    const lines = mergedLines;
     const items = lines.map(line => ({ kind: classify(line), line }));
 
     // Group consecutive stats into statgroups
@@ -450,9 +464,9 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                 lineHeight: 1.5,
                 minHeight: 44,
                 display: "flex",
-                alignItems: "center",
+                alignItems: "flex-start",
               }}>
-                <span style={{ fontWeight: 600, color: iosLabel }}>{sentenceCase(label)}</span>
+                <span style={{ fontWeight: 600, color: iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(label)}</span>
                 {val && <span style={{ fontWeight: 400, color: iosValue }}>: {sentenceCase(val)}</span>}
               </div>
             );
