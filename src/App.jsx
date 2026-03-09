@@ -327,7 +327,16 @@ function statColor(label) {
 
 // Parse any line into {label, val}
 function parseStat(line) {
-  const colonIdx = line.indexOf(":");
+  // Nếu có ] thì tìm : sau ] cuối cùng (tránh : trong tên item [[...]])
+  const lastBracket = line.lastIndexOf("]");
+  let colonIdx;
+  if (lastBracket !== -1) {
+    // Tìm : sau ] cuối
+    const afterBracket = line.indexOf(":", lastBracket);
+    colonIdx = afterBracket !== -1 ? afterBracket : line.indexOf(":");
+  } else {
+    colonIdx = line.indexOf(":");
+  }
   if (colonIdx === -1) return { label: line, val: "" };
   return {
     label: line.slice(0, colonIdx).trim(),
@@ -379,6 +388,7 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
   if (block.type === "box") {
     // Merge lines bị ngắt giữa label và colon (vd: "Kỹ" + "Năng: value" → "Kỹ Năng: value")
     const rawLines = block.content.split("\n").map(l => l.trim()).filter(Boolean);
+    if(block.content.includes("Kruger") || block.content.includes("Kỹ")) console.log("BOX RAW:", JSON.stringify(rawLines));
     const mergedLines = [];
     for (let mi = 0; mi < rawLines.length; mi++) {
       const cur = rawLines[mi];
@@ -388,9 +398,19 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
         mergedLines.push(cur + " " + next);
         mi++;
       }
-      // Case 2: [Section] riêng dòng + dòng sau là value (không phải stat, không phải []) → merge thành stat
+      // Case 2: [Section] riêng dòng + dòng sau là value → merge (vd: "[[Item] Rank]" + "Huyền thoại")
       else if (next && /^\[.+\]$/.test(cur) && !next.includes(":") && !/^\[/.test(next) && !/^\*/.test(next)) {
         mergedLines.push(cur + ": " + next);
+        mi++;
+      }
+      // Case 3: "[Label]:" (colon nhưng không có val) + dòng sau là value → merge
+      else if (next && /^\[.+\]:$/.test(cur.trim()) && !/^\[/.test(next) && !/^\*/.test(next)) {
+        mergedLines.push(cur.trim() + " " + next);
+        mi++;
+      }
+      // Case 4: label kết thúc bằng : nhưng không có val + dòng sau là tiếp theo của val
+      else if (next && cur.endsWith(":") && !cur.startsWith("*") && cur.length <= 60 && !next.includes(":") && !/^\[/.test(next)) {
+        mergedLines.push(cur + " " + next);
         mi++;
       }
       else {
