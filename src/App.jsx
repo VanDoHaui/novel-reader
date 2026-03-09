@@ -703,7 +703,8 @@ export default function App() {
   }, []);
 
   const c = themes[theme];
-  const goRead = id => { setChId(id); setPg("read"); setSett(false); setToc(false); setLastRead(id); };
+  const restoreScrollRef = { current: false };
+  const goRead = id => { restoreScrollRef.current = true; setChId(id); setPg("read"); setSett(false); setToc(false); setLastRead(id); };
   // FIX 2: nav("upload") directly via state — no getElementById needed
   const nav    = p  => { setPg(p);   setSett(false); setToc(false); };
   const flash  = (m, color="#16a34a") => { setToast({m,color}); setTimeout(()=>setToast(null),3000); };
@@ -836,7 +837,7 @@ export default function App() {
 
       <main style={{maxWidth:pg==="read"?"100%":900,margin:"0 auto",padding:pg==="read"?"0":"0 16px"}}>
         {pg==="home"   && <Home   c={c} chapters={chapters} goRead={goRead} navUpload={()=>nav("upload")} bookmark={bookmark} goBookmark={()=>bookmark&&goRead(bookmark)} lastRead={lastRead} scrollPos={scrollPos}/>}
-        {pg==="read"   && <Read   c={c} chapters={chapters} chapterId={chapterId} setChId={setChId} fs={fs} setFs={setFs} fi={fi} setFi={setFi} lh={lh} setLh={setLh} cw={cw} setCw={setCw} bookmark={bookmark} setBookmark={setBookmark} scrollPos={scrollPos} setScrollPos={setScrollPos} lastRead={lastRead} setLastRead={setLastRead} sett={sett} setSett={setSett} toc={toc} setToc={setToc} theme={theme} setTheme={setTheme} prev={prev} next={next} idx={idx} nextTheme={nextTheme} navHome={()=>nav("home")}/>}
+        {pg==="read"   && <Read   c={c} chapters={chapters} chapterId={chapterId} setChId={setChId} restoreScrollRef={restoreScrollRef} fs={fs} setFs={setFs} fi={fi} setFi={setFi} lh={lh} setLh={setLh} cw={cw} setCw={setCw} bookmark={bookmark} setBookmark={setBookmark} scrollPos={scrollPos} setScrollPos={setScrollPos} lastRead={lastRead} setLastRead={setLastRead} sett={sett} setSett={setSett} toc={toc} setToc={setToc} theme={theme} setTheme={setTheme} prev={prev} next={next} idx={idx} nextTheme={nextTheme} navHome={()=>nav("home")}/>}
         {pg==="upload" && <Upload c={c} chapters={chapters} addChapters={addChapters} deleteChapter={deleteChapter} deleteAllChapters={deleteAllChapters} flash={flash} theme={theme} nextTheme={nextTheme}/>}
       </main>
     </div>
@@ -975,7 +976,7 @@ function VirtualList({ items, itemHeight=36, renderItem, containerStyle={} }){
 }
 
 // -- READ --
-function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,bookmark,setBookmark,scrollPos,setScrollPos,lastRead,setLastRead,sett,setSett,toc,setToc,theme,setTheme,prev,next,idx,nextTheme,navHome}){
+function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,bookmark,setBookmark,scrollPos,setScrollPos,lastRead,setLastRead,sett,setSett,toc,setToc,theme,setTheme,prev,next,idx,nextTheme,navHome,restoreScrollRef={current:false}}){
   const mob    = useIsMobile();
   const [mobMenu, setMobMenu] = useState(false);
   const [tocSearch, setTocSearch] = useState('');
@@ -1021,7 +1022,19 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
   // Restore scroll position when returning to a chapter
   useEffect(()=>{
     if(!chapterId) return;
-    window.scrollTo({top:0});
+    if(restoreScrollRef.current) {
+      // Tiếp tục đọc — restore vị trí cũ
+      const saved = scrollPos[chapterId];
+      if(saved && saved > 100) {
+        setTimeout(()=>window.scrollTo({top:saved}), 120);
+      } else {
+        window.scrollTo({top:0});
+      }
+      restoreScrollRef.current = false;
+    } else {
+      // Chuyển chương mới — scroll lên đầu
+      window.scrollTo({top:0});
+    }
   }, [chapterId]);
   const font   = FONTS[fi];
   const chMeta = chapters.find(ch=>ch.id===chapterId);
