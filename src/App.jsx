@@ -356,6 +356,9 @@ function classify(line) {
     return isNotification ? "note" : "section";
   }
 
+  // [[label] extra]: value hoặc [label] extra: value → stat
+  if (/^\[.+\].+:/.test(line)) return "stat";
+
   // Key : Value — key up to 60 chars to handle "Điều kiện chế tác", "Điều kiện Sử dụng"
   const colonIdx = line.indexOf(":");
   if (colonIdx > 0 && colonIdx <= 60) {
@@ -380,11 +383,17 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
     for (let mi = 0; mi < rawLines.length; mi++) {
       const cur = rawLines[mi];
       const next = rawLines[mi + 1];
-      // Nếu dòng hiện tại không có dấu : và ngắn (fragment), và dòng sau có dấu : → merge
-      if (next && !cur.includes(":") && cur.length <= 20 && next.includes(":")) {
+      // Case 1: fragment không có : + dòng sau có : → merge (vd: "Kỹ" + "Năng: value")
+      if (next && !cur.includes(":") && cur.length <= 30 && next.includes(":") && !next.startsWith("[")) {
         mergedLines.push(cur + " " + next);
-        mi++; // bỏ qua dòng tiếp
-      } else {
+        mi++;
+      }
+      // Case 2: [Section] riêng dòng + dòng sau là value (không phải stat, không phải []) → merge thành stat
+      else if (next && /^\[.+\]$/.test(cur) && !next.includes(":") && !/^\[/.test(next) && !/^\*/.test(next)) {
+        mergedLines.push(cur + ": " + next);
+        mi++;
+      }
+      else {
         mergedLines.push(cur);
       }
     }
