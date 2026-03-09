@@ -388,7 +388,6 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
   if (block.type === "box") {
     // Merge lines bị ngắt giữa label và colon (vd: "Kỹ" + "Năng: value" → "Kỹ Năng: value")
     const rawLines = block.content.split("\n").map(l => l.trim()).filter(Boolean);
-    if(block.content.includes("Kruger") || block.content.includes("Kỹ")) console.log("BOX RAW:", JSON.stringify(rawLines));
     const mergedLines = [];
     for (let mi = 0; mi < rawLines.length; mi++) {
       const cur = rawLines[mi];
