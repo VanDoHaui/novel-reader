@@ -703,7 +703,7 @@ export default function App() {
   }, []);
 
   const c = themes[theme];
-  const restoreScrollRef = { current: false };
+  const restoreScrollRef = useRef(false);
   const goRead = id => { restoreScrollRef.current = true; setChId(id); setPg("read"); setSett(false); setToc(false); setLastRead(id); };
   // FIX 2: nav("upload") directly via state — no getElementById needed
   const nav    = p  => { setPg(p);   setSett(false); setToc(false); };
