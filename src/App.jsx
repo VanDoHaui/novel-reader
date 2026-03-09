@@ -1046,6 +1046,12 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
     // Kiểm tra cache trước
     if(chapterCache.current[chapterId]){
       setChDataLocal(chapterCache.current[chapterId]);
+      setTimeout(()=>{
+        if(pendingScroll.current !== null){
+          window.scrollTo({top: pendingScroll.current});
+          pendingScroll.current = null;
+        }
+      }, 80);
       return;
     }
     // Nếu đã có paragraphs trong memory (vừa upload) thì dùng luôn
@@ -1053,6 +1059,12 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
     if(cached?.paragraphs?.length){
       chapterCache.current[chapterId] = cached;
       setChDataLocal(cached);
+      setTimeout(()=>{
+        if(pendingScroll.current !== null){
+          window.scrollTo({top: pendingScroll.current});
+          pendingScroll.current = null;
+        }
+      }, 80);
       return;
     }
     // Không có thì fetch từ Supabase
@@ -1061,18 +1073,13 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
         chapterCache.current[chapterId] = data;
         setChDataLocal(data);
         setTimeout(()=>{
-          const pos = pendingScroll.current ?? 0;
-          window.scrollTo({top:pos});
-          pendingScroll.current = null;
+          if(pendingScroll.current !== null){
+            window.scrollTo({top: pendingScroll.current});
+            pendingScroll.current = null;
+          }
         }, 80);
       }
     });
-    // Scroll sau khi data từ cache load (instant)
-    if(chapterCache.current[chapterId]) {
-      const pos = pendingScroll.current ?? 0;
-      setTimeout(()=>window.scrollTo({top:pos}), 80);
-      pendingScroll.current = null;
-    }
   },[chapterId]);
 
   // Prefetch chương kế tiếp và trước
