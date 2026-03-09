@@ -780,7 +780,7 @@ export default function App() {
       .ch-content{animation:chFadeIn .3s cubic-bezier(.22,1,.36,1) both}
       .ios-row{transition:background .12s ease}
       .ios-row:active{background:rgba(0,0,0,0.04)!important}
-      ::-webkit-scrollbar{width:12px}::-webkit-scrollbar-track{background:transparent}
+      ::-webkit-scrollbar{width:16px}::-webkit-scrollbar-track{background:transparent}
       ::-webkit-scrollbar-thumb{background:${c.tx3};border-radius:9px;border:2px solid transparent;background-clip:padding-box}
       ::selection{background:${c.ac}28}
     
@@ -1246,6 +1246,22 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
                         ))}
                       </div>
                     </div>
+                    <div style={{height:"0.5px",background:theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",margin:"0 16px"}}/>
+                    {/* Dãn dòng */}
+                    <div style={{padding:"12px 16px 14px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                        <div style={{fontSize:11,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.06em"}}>Dãn dòng</div>
+                        <div style={{fontSize:13,fontWeight:700,color:c.ac,background:c.acBg,padding:"2px 10px",borderRadius:20}}>{lh.toFixed(2)}</div>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <button onClick={()=>setLh(l=>Math.max(1.4,+(l-0.1).toFixed(1)))} style={{width:32,height:32,borderRadius:50,border:"none",background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)",color:c.tx,fontSize:16,fontWeight:300,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                        <div style={{flex:1,position:"relative",height:4,borderRadius:4,background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)"}}>
+                          <div style={{position:"absolute",left:0,top:0,height:"100%",borderRadius:4,background:c.ac,width:`${((lh-1.4)/1.2)*100}%`,transition:"width .15s"}}/>
+                          <input type="range" min="1.4" max="2.6" step="0.1" value={lh} onChange={e=>setLh(+e.target.value)} style={{position:"absolute",left:0,top:-8,width:"100%",height:20,opacity:0,cursor:"pointer"}}/>
+                        </div>
+                        <button onClick={()=>setLh(l=>Math.min(2.6,+(l+0.1).toFixed(1)))} style={{width:32,height:32,borderRadius:50,border:"none",background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)",color:c.tx,fontSize:16,fontWeight:300,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1320,6 +1336,23 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
                       {f.n}
                     </button>
                   ))}
+                </div>
+              </div>
+
+
+              {/* Dãn dòng */}
+              <div style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div style={{fontSize:12,fontWeight:600,color:c.tx3,textTransform:"uppercase",letterSpacing:"0.05em"}}>Dãn dòng</div>
+                  <div style={{fontSize:13,fontWeight:700,color:c.ac,background:c.acBg,padding:"2px 10px",borderRadius:20}}>{lh.toFixed(2)}</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <button onClick={()=>setLh(l=>Math.max(1.4,+(l-0.1).toFixed(1)))} style={{width:36,height:36,borderRadius:50,border:"none",background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)",color:c.tx,fontSize:20,fontWeight:300,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                  <div style={{flex:1,position:"relative",height:4,borderRadius:4,background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)"}}>
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",borderRadius:4,background:c.ac,width:`${((lh-1.4)/1.2)*100}%`,transition:"width .15s"}}/>
+                    <input type="range" min="1.4" max="2.6" step="0.1" value={lh} onChange={e=>setLh(+e.target.value)} style={{position:"absolute",left:0,top:-10,width:"100%",height:24,opacity:0,cursor:"pointer"}}/>
+                  </div>
+                  <button onClick={()=>setLh(l=>Math.min(2.6,+(l+0.1).toFixed(1)))} style={{width:36,height:36,borderRadius:50,border:"none",background:theme==="dark"?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)",color:c.tx,fontSize:20,fontWeight:300,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
               </div>
 
