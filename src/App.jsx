@@ -388,7 +388,6 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
   if (block.type === "box") {
     // Merge lines bị ngắt giữa label và colon (vd: "Kỹ" + "Năng: value" → "Kỹ Năng: value")
     const rawLines = block.content.split("\n").map(l => l.trim()).filter(Boolean);
-    console.log("BOX RAW:", JSON.stringify(rawLines));
     const mergedLines = [];
     for (let mi = 0; mi < rawLines.length; mi++) {
       const cur = rawLines[mi];
@@ -588,9 +587,11 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                         lineHeight: 1.5,
                         minHeight: 44,
                         display: "flex",
-                        alignItems: "center",
+                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                        gap: "0 4px",
                       }}>
-                        <span style={{ fontWeight: 600, color: iosLabel }}>{sentenceCase(label)}: </span>
+                        <span style={{ fontWeight: 600, color: iosLabel, whiteSpace: "nowrap", flexShrink: 0 }}>{sentenceCase(label)}:</span>
                         <span style={{ fontWeight: 400, color: iosValue }}>{val}</span>
                       </div>
                     );
