@@ -1019,21 +1019,17 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
     return ()=> window.removeEventListener('scroll', saveScroll);
   }, [chapterId]);
 
-  // Restore scroll position when returning to a chapter
+  const pendingScroll = useRef(null);
+
+  // Khi chapterId đổi: set pending scroll
   useEffect(()=>{
     if(!chapterId) return;
     if(restoreScrollRef.current) {
-      // Tiếp tục đọc — restore vị trí cũ
       const saved = scrollPos[chapterId];
-      if(saved && saved > 100) {
-        setTimeout(()=>window.scrollTo({top:saved}), 120);
-      } else {
-        window.scrollTo({top:0});
-      }
+      pendingScroll.current = (saved && saved > 100) ? saved : 0;
       restoreScrollRef.current = false;
     } else {
-      // Chuyển chương mới — scroll lên đầu
-      window.scrollTo({top:0});
+      pendingScroll.current = 0;
     }
   }, [chapterId]);
   const font   = FONTS[fi];
@@ -1064,8 +1060,19 @@ function Read({c,chapters,chapterId,setChId,fs,setFs,fi,setFi,lh,setLh,cw,setCw,
       if(data){
         chapterCache.current[chapterId] = data;
         setChDataLocal(data);
+        setTimeout(()=>{
+          const pos = pendingScroll.current ?? 0;
+          window.scrollTo({top:pos});
+          pendingScroll.current = null;
+        }, 80);
       }
     });
+    // Scroll sau khi data từ cache load (instant)
+    if(chapterCache.current[chapterId]) {
+      const pos = pendingScroll.current ?? 0;
+      setTimeout(()=>window.scrollTo({top:pos}), 80);
+      pendingScroll.current = null;
+    }
   },[chapterId]);
 
   // Prefetch chương kế tiếp và trước
