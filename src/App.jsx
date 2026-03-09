@@ -393,7 +393,8 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
       const cur = rawLines[mi];
       const next = rawLines[mi + 1];
       // Case 1: fragment không có : + dòng sau có : → merge (vd: "Kỹ" + "Năng: value")
-      if (next && !cur.includes(":") && cur.length <= 30 && next.includes(":") && !next.startsWith("[")) {
+      // Không merge nếu cur là [section header]
+      if (next && !cur.includes(":") && cur.length <= 30 && !/^\[.+\]$/.test(cur) && next.includes(":") && !next.startsWith("[")) {
         mergedLines.push(cur + " " + next);
         mi++;
       }
