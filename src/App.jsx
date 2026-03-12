@@ -578,6 +578,7 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                   const rowSep = ri > 0 ? `0.5px solid ${iosSepLine}` : "none";
                   if (row.type === "long") {
                     const { label, val } = row.stat;
+                    const labelLong = label.length > 20;
                     return (
                       <div key={ri} style={{
                         padding: "11px 16px",
@@ -588,11 +589,12 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                         minHeight: 44,
                         display: "flex",
                         alignItems: "flex-start",
+                        flexDirection: (mob && labelLong) ? "column" : "row",
                         flexWrap: "wrap",
-                        gap: "0 4px",
+                        gap: (mob && labelLong) ? "2px 0" : "0 4px",
                       }}>
-                        <span style={{ fontWeight: 600, color: iosLabel, whiteSpace: "nowrap", flexShrink: 0 }}>{sentenceCase(label)}:</span>
-                        <span style={{ fontWeight: 400, color: iosValue }}>{val}</span>
+                        <span style={{ fontWeight: 600, color: iosLabel, whiteSpace: "nowrap", flexShrink: 0 }}>{sentenceCase(label)}{(mob && labelLong) ? "" : ":"}</span>
+                        <span style={{ fontWeight: 400, color: iosValue }}>{(mob && labelLong) ? val : val}</span>
                       </div>
                     );
                   }
