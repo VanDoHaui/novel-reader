@@ -388,6 +388,7 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
   if (block.type === "box") {
     // Merge lines bị ngắt giữa label và colon (vd: "Kỹ" + "Năng: value" → "Kỹ Năng: value")
     const rawLines = block.content.split("\n").map(l => l.trim()).filter(Boolean);
+    console.log("BOX RAW:", JSON.stringify(rawLines));
     const mergedLines = [];
     for (let mi = 0; mi < rawLines.length; mi++) {
       const cur = rawLines[mi];
@@ -790,6 +791,13 @@ export default function App() {
           return merged;
         });
         flash(`☁️ Đã tải ${data.length} chương từ cloud`);
+        // Auto-navigate đến chương đang đọc
+        const lr = lsGet("lastRead", null);
+        if (lr) {
+          restoreScrollRef.current = true;
+          setChId(lr);
+          setPg("read");
+        }
       }
     });
   }, []);
