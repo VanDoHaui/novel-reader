@@ -602,20 +602,26 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                   if (row.type === "pair2") {
                     return (
                       <div key={ri} style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", borderTop: rowSep }}>
-                        {row.stats.map((stat, si) => (
+                        {row.stats.map((stat, si) => {
+                          const lblLen = stat.label.length;
+                          const stackCol = mob && (lblLen > 15 || stat.val.length > 15);
+                          return (
                           <div key={si} style={{
                             padding: "9px 16px",
                             fontFamily: ff,
                             fontSize: boxFs,
                             lineHeight: 1.6,
                             borderLeft: (!mob && si===1) ? `0.5px solid ${iosSepLine}` : "none",
+                            borderTop: (mob && si===1) ? `0.5px solid ${iosSepLine}` : "none",
                             display: "flex",
                             alignItems: "flex-start",
+                            flexDirection: stackCol ? "column" : "row",
+                            gap: stackCol ? "2px 0" : "0 4px",
                           }}>
-                            <span style={{ fontFamily:ff, fontWeight:700, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}</span>
-                            <span style={{ fontFamily:ff, fontWeight:400, color:iosValue }}>{stat.val ? `: ${stat.val}` : ""}</span>
+                            <span style={{ fontFamily:ff, fontWeight:700, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}:</span>
+                            <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, flex:1, minWidth:0 }}>{stat.val || ""}</span>
                           </div>
-                        ))}
+                        )})}
                       </div>
                     );
                   }
