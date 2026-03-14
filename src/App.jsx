@@ -579,8 +579,8 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                   const rowSep = ri > 0 ? `0.5px solid ${iosSepLine}` : "none";
                   if (row.type === "long") {
                     const { label, val } = row.stat;
-                    // Trên mobile luôn stack dọc để value không bị ép
-                    const stackCol = mob;
+                    // Stack dọc khi: mobile, hoặc label dài > 18 ký tự
+                    const stackCol = mob || label.length > 18;
                     return (
                       <div key={ri} style={{
                         padding: "11px 16px",
