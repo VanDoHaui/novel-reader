@@ -579,7 +579,8 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                   const rowSep = ri > 0 ? `0.5px solid ${iosSepLine}` : "none";
                   if (row.type === "long") {
                     const { label, val } = row.stat;
-                    const labelLong = label.length > 20;
+                    // Trên mobile luôn stack dọc để value không bị ép
+                    const stackCol = mob;
                     return (
                       <div key={ri} style={{
                         padding: "11px 16px",
@@ -590,12 +591,11 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                         minHeight: 44,
                         display: "flex",
                         alignItems: "flex-start",
-                        flexDirection: (mob && labelLong) ? "column" : "row",
-                        flexWrap: "wrap",
-                        gap: (mob && labelLong) ? "2px 0" : "0 4px",
+                        flexDirection: stackCol ? "column" : "row",
+                        gap: stackCol ? "3px 0" : "0 4px",
                       }}>
-                        <span style={{ fontWeight: 600, color: iosLabel, whiteSpace: "nowrap", flexShrink: 0 }}>{sentenceCase(label)}{(mob && labelLong) ? "" : ":"}</span>
-                        <span style={{ fontWeight: 400, color: iosValue }}>{(mob && labelLong) ? val : val}</span>
+                        <span style={{ fontWeight: 600, color: iosLabel, whiteSpace: "nowrap", flexShrink: 0 }}>{sentenceCase(label)}:</span>
+                        <span style={{ fontWeight: 400, color: iosValue, flex: 1, minWidth: 0 }}>{val}</span>
                       </div>
                     );
                   }
@@ -630,10 +630,12 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                           minHeight: 44,
                           display: "flex",
                           alignItems: "flex-start",
-                          gap: 0,
+                          flexDirection: "row",
+                          flexWrap: "wrap",
+                          gap: "0 4px",
                         }}>
-                          <span style={{ fontFamily:ff, fontWeight:600, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}</span>
-                          <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, fontVariantNumeric:"tabular-nums" }}>{stat.val ? `: ${stat.val}` : ""}</span>
+                          <span style={{ fontFamily:ff, fontWeight:600, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}:</span>
+                          <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, fontVariantNumeric:"tabular-nums", flex:1, minWidth:0 }}>{stat.val || ""}</span>
                         </div>
                       ))}
                     </div>
