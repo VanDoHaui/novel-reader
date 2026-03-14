@@ -630,23 +630,22 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                       {row.stats.map((stat, si) => {
                         const stackCol = mob || stat.label.length > 18;
                         return (
-                        <div key={si} style={{
-                          padding: "11px 16px",
-                          fontFamily: ff,
-                          fontSize: boxFs,
-                          lineHeight: 1.5,
-                          minHeight: 44,
-                          display: "flex",
-                          alignItems: "flex-start",
-                          flexDirection: stackCol ? "column" : "row",
-                          gap: stackCol ? "3px 0" : "0 4px",
-                        }}>
-                          <span style={{ fontFamily:ff, fontWeight:600, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}:</span>
-                          <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, fontVariantNumeric:"tabular-nums", flex:1, minWidth:0 }}>{stat.val || ""}</span>
-                        </div>
-                      )}
-                      );
-                    })}
+                          <div key={si} style={{
+                            padding: "11px 16px",
+                            fontFamily: ff,
+                            fontSize: boxFs,
+                            lineHeight: 1.5,
+                            minHeight: 44,
+                            display: "flex",
+                            alignItems: "flex-start",
+                            flexDirection: stackCol ? "column" : "row",
+                            gap: stackCol ? "3px 0" : "0 4px",
+                          }}>
+                            <span style={{ fontFamily:ff, fontWeight:600, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}:</span>
+                            <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, fontVariantNumeric:"tabular-nums", flex:1, minWidth:0 }}>{stat.val || ""}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
