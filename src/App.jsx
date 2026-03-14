@@ -627,7 +627,9 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                   }
                   return (
                     <div key={ri} style={{ borderTop: rowSep }}>
-                      {row.stats.map((stat, si) => (
+                      {row.stats.map((stat, si) => {
+                        const stackCol = mob || stat.label.length > 18;
+                        return (
                         <div key={si} style={{
                           padding: "11px 16px",
                           fontFamily: ff,
@@ -636,14 +638,15 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                           minHeight: 44,
                           display: "flex",
                           alignItems: "flex-start",
-                          flexDirection: "row",
-                          flexWrap: "wrap",
-                          gap: "0 4px",
+                          flexDirection: stackCol ? "column" : "row",
+                          gap: stackCol ? "3px 0" : "0 4px",
                         }}>
                           <span style={{ fontFamily:ff, fontWeight:600, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}:</span>
                           <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, fontVariantNumeric:"tabular-nums", flex:1, minWidth:0 }}>{stat.val || ""}</span>
                         </div>
-                      ))}
+                      )}
+                      );
+                    })}
                     </div>
                   );
                 })}
