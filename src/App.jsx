@@ -600,28 +600,28 @@ function Block({ block, c, font, fs, lh=1.75, mob=false, itemNames=[] }) {
                     );
                   }
                   if (row.type === "pair2") {
+                    // Nếu bất kỳ label nào dài > 18 ký tự → dùng 1 cột
+                    const anyLongLabel = row.stats.some(s => s.label.length > 18);
+                    const cols = (mob || anyLongLabel) ? "1fr" : "1fr 1fr";
                     return (
-                      <div key={ri} style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", borderTop: rowSep }}>
-                        {row.stats.map((stat, si) => {
-                          const lblLen = stat.label.length;
-                          const stackCol = mob && (lblLen > 15 || stat.val.length > 15);
-                          return (
+                      <div key={ri} style={{ display:"grid", gridTemplateColumns: cols, borderTop: rowSep }}>
+                        {row.stats.map((stat, si) => (
                           <div key={si} style={{
                             padding: "9px 16px",
                             fontFamily: ff,
                             fontSize: boxFs,
                             lineHeight: 1.6,
-                            borderLeft: (!mob && si===1) ? `0.5px solid ${iosSepLine}` : "none",
-                            borderTop: (mob && si===1) ? `0.5px solid ${iosSepLine}` : "none",
+                            borderLeft: (cols==="1fr 1fr" && si===1) ? `0.5px solid ${iosSepLine}` : "none",
+                            borderTop: (cols==="1fr" && si===1) ? `0.5px solid ${iosSepLine}` : "none",
                             display: "flex",
                             alignItems: "flex-start",
-                            flexDirection: stackCol ? "column" : "row",
-                            gap: stackCol ? "2px 0" : "0 4px",
+                            gap: "0 4px",
+                            flexWrap: "wrap",
                           }}>
                             <span style={{ fontFamily:ff, fontWeight:700, color:iosLabel, whiteSpace:"nowrap", flexShrink:0 }}>{sentenceCase(stat.label)}:</span>
                             <span style={{ fontFamily:ff, fontWeight:400, color:iosValue, flex:1, minWidth:0 }}>{stat.val || ""}</span>
                           </div>
-                        )})}
+                        ))}
                       </div>
                     );
                   }
